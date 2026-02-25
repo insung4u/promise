@@ -34,8 +34,8 @@ async function generateSprite() {
     console.log(`⏳ 잠시만 기다려주세요 (최대 1~2분 소요될 수 있습니다)...\n`);
 
     try {
-        // Imagen 3 API 엔드포인트 호출
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`, {
+        // Imagen API 엔드포인트 호출
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${apiKey}`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -85,10 +85,12 @@ async function generateSprite() {
         console.log(`✅ 생성 완료! 이미지가 성공적으로 저장되었습니다.`);
         console.log(`📁 저장 위치: ${fullOutputPath}`);
         console.log(`\n게임을 켜서 새 에셋을 확인해보세요!`);
+        process.exit(0);
 
     } catch (error) {
         console.error("\n❌ 이미지 생성 중 오류가 발생했습니다:");
         console.error(error.message);
+        process.exit(1);
     }
 }
 
