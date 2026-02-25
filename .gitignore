@@ -30,6 +30,5 @@ dist-ssr
 !.env.example
 
 # AI / Custom Agent Folders
-.claude/
 .cursor/
 .gemini/
