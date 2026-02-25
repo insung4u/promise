@@ -270,7 +270,7 @@ export class Projectile extends Phaser.GameObjects.Rectangle {
 ```typescript
 // 플레이어 유닛 스폰
 deck.forEach((unitData, i) => {
-  const spawnX = 600 + (i % 3) * 40;
+  const spawnX = 155 + (i % 3) * 40;
   const spawnY = 450 + Math.floor(i / 3) * 40;
   const unit = UnitFactory.create(this, { ...unitData, position: { x: spawnX, y: spawnY } });
   this.playerUnits.push(unit);

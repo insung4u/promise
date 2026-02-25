@@ -18,6 +18,7 @@
 | 장르 | 모바일 RTS — 5유닛 매크로 컨트롤 + 오토 전투 |
 | Phase | 0 — 클라이언트-only MVP (서버 없음, 싱글플레이어) |
 | 목표 | 스와이프 명령 + 오토 전투 재미 검증 |
+| 화면 방향 | **모바일 세로형(Portrait)만 지원** — 390×844px |
 
 ---
 
@@ -153,13 +154,22 @@ npm run lint     # eslint .
 - `vercel.json` SPA fallback rewrite 필수.
 
 ### AI 에셋 생성 (Image Generation)
-Agent(AI) 혹은 사용자는 아래 내장된 스크립트를 통해 언제든 고품질 게임 에셋 생성이 가능하다:
+
+**8방향 스프라이트 시트 생성 (권장):**
+```bash
+# 5방향 전체 생성 (W/NW/SW는 Phaser flipX 처리)
+node scripts/generate_spritesheet.mjs <유닛타입>        # infantry / tank / air / special
+node scripts/generate_spritesheet.mjs infantry E        # 특정 방향만
+```
+- 출력: `public/assets/units/<유닛타입>/<유닛타입>_<방향>.jpeg`
+- 규격: 4×4 그리드, 1024×1024px, `frameWidth: 256, frameHeight: 256`
+
+**단일 이미지 생성 (레거시):**
 ```bash
 node scripts/generate_sprite.mjs "프롬프트 내용" "폴더명/파일명.jpeg"
 ```
 * **주의**: 실행 전 프로젝트 루트의 `.env` 파일에 `GEMINI_API_KEY`가 있는지 확인.
-* **사용처**: 플레이스홀더를 대체할 완벽한 에셋이 필요할 때 직접/AI가 프롬프트를 작성하여 터미널에서 즉시 실행하고 적용.
-* **문서화 의무**: 에셋이 생성되어 특정 디렉토리(예: `public/assets/units/`)에 저장되면, **반드시 해당 디렉토리의 `README.md` 파일에 추가 및 수정된 에셋의 내용과 용도를 기록**할 것.
+* **문서화 의무**: 에셋이 저장된 각 폴더에 `README.md` 파일을 생성/업데이트하여 추가된 에셋을 기록할 것.
 
 ---
 

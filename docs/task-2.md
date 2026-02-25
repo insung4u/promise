@@ -151,4 +151,4 @@ npx shadcn@latest add button badge separator
 - [ ] TopBar 에 자원/명성/계급 표시
 - [ ] 전투 시작 버튼 클릭 → `useBattleStore.startBattle()` 호출
 - [ ] TypeScript strict 통과, `any` 없음
-- [ ] 모바일 세로(360×800) 레이아웃 정상
+- [ ] 모바일 세로(390×844) 레이아웃 정상
