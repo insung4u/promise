@@ -297,13 +297,34 @@ export default function SwipeZone() {
 
 ---
 
+## 거점 점령과 AutoAI 연동
+
+거점 점령 진행(`captureProgress` 증감)은 **BattleScene.updateCaptureProgress()** 에서 처리한다.
+AutoAI는 유닛을 거점 방향으로 이동시키는 역할만 하며, 점령 판정은 BattleScene에 위임한다.
+
+```
+흐름:
+  AutoAI.decide()
+    → unit.moveTo(capturePoint.x, capturePoint.y)
+        → Unit.preUpdate()에서 이동
+            → BattleScene.updateCaptureProgress()에서 반경 체크
+                → captureProgress 증감 → owner 변경
+```
+
+AutoAI가 `findPriorityCP()` 에서 거점 우선순위를 계산할 때,
+이미 `owner === 'player'`인 거점은 제외하므로 점령 완료 후 자연스럽게 다음 목표로 전환된다.
+
+---
+
 ## 완료 조건
 
 - [ ] AutoAI: 플레이어 유닛이 가장 가까운 적을 자동 공격
-- [ ] AutoAI: 미점령 거점 방향으로 자동 이동
+- [ ] AutoAI: 미점령/적 점령 거점 방향으로 자동 이동
+- [ ] AutoAI: 거점 점령 완료 후 다음 미점령 거점으로 목표 자동 전환
 - [ ] AutoAI: 쿨타임 정상 동작 (1000ms 간격 공격)
 - [ ] CommandSystem: 스와이프 방향 → 전체 유닛 이동 명령
 - [ ] AutoToggle: ON → AI 자동, OFF → 스와이프 명령만 수신
 - [ ] SwipeZone: 터치 스와이프 → EventBus 이벤트 발행
+- [ ] 유닛이 거점 위에 서면 BattleScene에서 점령 진행 확인 (연동 검증)
 - [ ] `update()` 루프에 `new` 없음 (재사용 변수 사용)
 - [ ] TypeScript strict 통과

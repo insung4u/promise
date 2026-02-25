@@ -63,14 +63,50 @@ export class LoadingScene extends Phaser.Scene {
   constructor() { super('LoadingScene'); }
 
   preload(): void {
-    // Placeholder 텍스처 생성 (실제 스프라이트 없어도 동작)
-    // 64×64 색상 블록으로 각 유닛 타입 구분
-    this.load.on('complete', () => {
-      EventBus.emit('scene:ready', { sceneName: 'LoadingScene' });
-    });
+    // Placeholder 텍스처 — PNG 파일 없이 런타임 생성 (design.md 섹션 11 참조)
+    this.createPlaceholderTextures();
   }
 
-  create(): void {
+  /**
+   * generateTexture()로 모든 placeholder 텍스처를 생성한다.
+   * 실제 PNG 교체 시 이 메서드만 제거하면 된다.
+   */
+  private createPlaceholderTextures(): void {
+    const g = this.make.graphics({ add: false });
+
+    // 유닛 텍스처 (아군)
+    const unitColors: Record<string, number> = {
+      unit_infantry: 0x4488ff,
+      unit_tank:     0xffaa00,
+      unit_air:      0x44ffcc,
+      unit_special:  0xff44aa,
+    };
+    Object.entries(unitColors).forEach(([key, color]) => {
+      g.clear().fillStyle(color).fillCircle(16, 16, 14)
+       .lineStyle(2, 0xffffff).strokeCircle(16, 16, 14)
+       .generateTexture(key, 32, 32);
+    });
+
+    // 적군 텍스처 (붉은 외곽선)
+    const enemyColors: Record<string, number> = {
+      enemy_infantry: 0x4488ff,
+      enemy_tank:     0xffaa00,
+      enemy_air:      0x44ffcc,
+      enemy_special:  0xff44aa,
+    };
+    Object.entries(enemyColors).forEach(([key, color]) => {
+      g.clear().fillStyle(color).fillCircle(16, 16, 14)
+       .lineStyle(3, 0xff2222).strokeCircle(16, 16, 14)
+       .generateTexture(key, 32, 32);
+    });
+
+    // 투사체
+    g.clear().fillStyle(0xffff00).fillCircle(4, 4, 4)
+     .generateTexture('projectile_bullet', 8, 8);
+
+    g.destroy();   // 재사용 Graphics 오브젝트 제거
+
+    EventBus.emit('scene:ready', { sceneName: 'LoadingScene' });
     this.scene.start('BattleScene');
   }
 }
@@ -91,8 +127,18 @@ import type { CapturePoint, UnitData } from '@/types';
 export class BattleScene extends Phaser.Scene {
   private capturePoints: CapturePoint[] = [];
   private unitPool!: ObjectPool;
-  private timeLeft = 600;   // 초 (init 데이터로 오버라이드)
+  private timeLeft = 600;      // 초 (init 데이터로 오버라이드)
+  private maxTime  = 600;      // 최대 시간 (결과 계산용)
   private mode: 'attack' | 'defense' = 'attack';
+  private hudTimer = 0;        // HUD 이벤트 throttle (1초 간격)
+
+  // Task 4에서 채워짐 — 거점 점령 판정에 사용
+  playerUnits: Unit[] = [];
+  enemyUnits:  Unit[] = [];
+
+  // 거점 비주얼 오브젝트 (id → Graphics)
+  private cpGraphics = new Map<number, Phaser.GameObjects.Graphics>();
+  private cpRings    = new Map<number, Phaser.GameObjects.Graphics>();
 
   constructor() { super('BattleScene'); }
 
@@ -156,12 +202,18 @@ export class BattleScene extends Phaser.Scene {
     });
   }
 
-  update(time: number, delta: number): void {
-    // 타이머 업데이트 (1000ms 단위)
+  update(_time: number, delta: number): void {
+    // 타이머 업데이트
     this.timeLeft -= delta / 1000;
 
-    // HUD 업데이트 이벤트 (매 초)
-    if (Math.floor(this.timeLeft) % 1 === 0) {
+    // 거점 점령 진행 업데이트 (매 프레임)
+    // Task 4에서 playerUnits/enemyUnits 배열이 채워진 후 동작
+    this.updateCaptureProgress(delta);
+
+    // HUD 업데이트 (매 초)
+    this.hudTimer += delta;
+    if (this.hudTimer >= 1000) {
+      this.hudTimer = 0;
       EventBus.emit('battle:hud', {
         timeLeft: Math.max(0, Math.floor(this.timeLeft)),
         playerScore: this.countPlayerPoints(),
@@ -169,8 +221,77 @@ export class BattleScene extends Phaser.Scene {
       });
     }
 
-    // 시간 초과 처리
     if (this.timeLeft <= 0) this.handleTimeUp();
+  }
+
+  /**
+   * 거점 점령 진행 메커니즘
+   * 거점 반경(50px) 내 아군/적군 유닛 수에 따라 captureProgress 증감.
+   * progress 0~100 → 100 도달 시 owner 변경.
+   *
+   * 규칙:
+   *   아군 유닛만 있을 때: +20/초
+   *   적군 유닛만 있을 때: -20/초 (적군 입장에서는 점령)
+   *   혼재 또는 아무도 없을 때: 변화 없음
+   */
+  private updateCaptureProgress(delta: number): void {
+    const CAPTURE_RADIUS = 50;
+    const CAPTURE_RATE   = 20;   // progress/초
+
+    for (const cp of this.capturePoints) {
+      const playerNear = this.playerUnits.filter(
+        (u) => u.isAlive && Math.hypot(u.x - cp.x, u.y - cp.y) <= CAPTURE_RADIUS
+      ).length;
+      const enemyNear = this.enemyUnits.filter(
+        (u) => u.isAlive && Math.hypot(u.x - cp.x, u.y - cp.y) <= CAPTURE_RADIUS
+      ).length;
+
+      if (playerNear > 0 && enemyNear === 0) {
+        // 아군만 → 점령 진행
+        cp.captureProgress = Math.min(100, cp.captureProgress + CAPTURE_RATE * (delta / 1000));
+        if (cp.captureProgress >= 100 && cp.owner !== 'player') {
+          cp.owner = 'player';
+          this.redrawCapturePoint(cp);
+        }
+      } else if (enemyNear > 0 && playerNear === 0) {
+        // 적군만 → 점령 역전
+        cp.captureProgress = Math.max(0, cp.captureProgress - CAPTURE_RATE * (delta / 1000));
+        if (cp.captureProgress <= 0 && cp.owner !== 'enemy') {
+          cp.owner = 'enemy';
+          this.redrawCapturePoint(cp);
+        }
+      }
+      // 혼재 또는 아무도 없으면 변화 없음
+
+      // 프로그레스 링 업데이트 (값 변경 시에만)
+      this.updateCaptureRing(cp);
+    }
+  }
+
+  // 거점 owner 변경 시 색상 재드로우
+  private redrawCapturePoint(cp: CapturePoint): void {
+    const color = cp.owner === 'player' ? 0x2255dd
+                : cp.owner === 'enemy'  ? 0xdd2222
+                :                         0x888888;
+    // 해당 거점 Graphics 오브젝트를 Map으로 관리 후 업데이트
+    const gfx = this.cpGraphics.get(cp.id);
+    if (gfx) {
+      gfx.clear()
+         .fillStyle(color, 0.85).fillCircle(0, 0, 35)
+         .lineStyle(2, 0xffffff).strokeCircle(0, 0, 38);
+    }
+  }
+
+  // 점령 프로그레스 링 (0~360도 arc)
+  private updateCaptureRing(cp: CapturePoint): void {
+    const ring = this.cpRings.get(cp.id);
+    if (!ring) return;
+    const angle = Phaser.Math.DegToRad(cp.captureProgress * 3.6 - 90);  // 0%=-90도, 100%=270도
+    ring.clear()
+        .lineStyle(4, 0xffdd00)
+        .beginPath()
+        .arc(0, 0, 42, Phaser.Math.DegToRad(-90), angle, false)
+        .strokePath();
   }
 
   private countPlayerPoints(): number {
@@ -236,7 +357,11 @@ export class ObjectPool {
 - [ ] `npm run dev` → 800×600 맵 렌더링 확인
 - [ ] 배경: 풀(초록) + 도로(갈색) + 산(회색) 구분 표시
 - [ ] 거점 3개 원형 표시 (적=빨강, 중립=회색, 아군=파랑)
+- [ ] Placeholder 텍스처 전부 생성 완료, 404 에셋 에러 0개
 - [ ] Object Pool 20개 초기화 완료 (콘솔 오류 없음)
 - [ ] `EventBus.emit('scene:ready')` 정상 발행
-- [ ] `EventBus.emit('battle:hud')` 타이머 업데이트 확인
+- [ ] `EventBus.emit('battle:hud')` 타이머 1초 간격 업데이트 확인
+- [ ] 거점 반경(50px) 내 유닛 진입 시 `captureProgress` 증가 확인
+- [ ] `captureProgress` 100% 도달 시 거점 owner 변경 + 색상 변경 확인
+- [ ] 프로그레스 링(arc) 진행률에 따라 시각 업데이트 확인
 - [ ] `update()` 루프에 `new` 키워드 없음

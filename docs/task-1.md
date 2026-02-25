@@ -268,6 +268,7 @@ export class SceneManager {
 
 ```typescript
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import type { PlayerData, UnitData } from '@/types';
 
 interface PlayerStore {
@@ -290,18 +291,35 @@ const defaultUnits: UnitData[] = Array.from({ length: 5 }, (_, i) => ({
 }));
 
 // 플레이어 전역 상태 슬라이스
-export const usePlayerStore = create<PlayerStore>((set) => ({
-  player: {
-    resources: 1000,
-    fame: 0,
-    rank: 'soldier',
-    allUnits: defaultUnits,
-    deck: defaultUnits.slice(0, 5),
-  },
-  setDeck: (deck) => set((s) => ({ player: { ...s.player, deck } })),
-  addFame: (amount) => set((s) => ({ player: { ...s.player, fame: s.player.fame + amount } })),
-  addResources: (amount) => set((s) => ({ player: { ...s.player, resources: s.player.resources + amount } })),
-}));
+// persist 미들웨어로 localStorage에 자동 저장 — 앱 재시작 후에도 유지
+export const usePlayerStore = create<PlayerStore>()(
+  persist(
+    (set) => ({
+      player: {
+        resources: 1000,
+        fame: 0,
+        rank: 'soldier',
+        allUnits: defaultUnits,
+        deck: defaultUnits.slice(0, 5),
+      },
+      setDeck: (deck) => set((s) => ({ player: { ...s.player, deck } })),
+      addFame: (amount) => set((s) => ({ player: { ...s.player, fame: s.player.fame + amount } })),
+      addResources: (amount) => set((s) => ({ player: { ...s.player, resources: s.player.resources + amount } })),
+    }),
+    {
+      name: 'promise-player',          // localStorage 키
+      partialize: (s) => ({            // 저장할 필드만 선택 (함수 제외)
+        player: {
+          resources: s.player.resources,
+          fame:      s.player.fame,
+          rank:      s.player.rank,
+          allUnits:  s.player.allUnits,
+          deck:      s.player.deck,
+        },
+      }),
+    }
+  )
+);
 ```
 
 ### src/app/store/battleStore.ts
@@ -385,4 +403,5 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 - [ ] `src/types/index.ts` 에 모든 인터페이스 정의 완료
 - [ ] EventBus import 가 `game/` 과 `app/` 양쪽에서 동작
 - [ ] Zustand 스토어 2개 (playerStore, battleStore) 생성 완료
+- [ ] playerStore persist 동작 확인 (앱 새로고침 후 자원/명성 유지)
 - [ ] `any` 타입 사용 없음 (`tsc --strict` 통과)
