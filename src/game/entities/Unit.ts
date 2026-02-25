@@ -19,12 +19,15 @@ export class Unit extends Phaser.Physics.Arcade.Sprite {
     // Task 4에서 AI 이동, 공격 로직 추가
   }
 
-  // 데미지 처리
+  // 데미지 처리 — Object Pool 패턴 준수
+  // destroy() 직접 호출 금지. 비활성화 후 Pool 반환 대기.
+  // Task 4에서 BattleScene의 Pool이 setActive(false) 상태를 감지해 회수한다.
   takeDamage(amount: number): void {
     this.unitData.hp = Math.max(0, this.unitData.hp - amount);
     if (this.unitData.hp <= 0) {
       this.unitData.isAlive = false;
-      this.destroy();
+      this.setActive(false);
+      this.setVisible(false);
     }
   }
 

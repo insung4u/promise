@@ -79,3 +79,15 @@ Task 2, 3은 병렬 착수 가능 (Task 1 완료 기반)
 - src/game/core/Game.ts (width: 390, height: 480)
 - src/game/systems/CommandSystem.ts (DIRECTION_TARGETS 세로형 좌표)
 - .claude/agents/scene-agent.md (맵 크기, 거점 좌표, 스와이프 존 위치)
+
+### Task 1 소스 코드 세로형 반영 + P1 수정 (2026-02-25)
+- src/game/scenes/BattleScene.ts: 임시 텍스트 좌표 (400,300) → (195,240)
+- src/app/ui/App.tsx: 컨테이너 w-[800px] h-[600px] → w-[390px] h-[844px]
+- src/app/store/playerStore.ts: makeUnit() 스탯 중복 제거, UnitFactory.getDefaultData() 위임 (P1-1)
+- src/game/entities/Unit.ts: takeDamage() this.destroy() → setActive(false)/setVisible(false) (P1-2)
+- 빌드 결과: tsc --noEmit 0건, npm run build 성공
+
+### Object Pool 패턴 규칙 (Unit.takeDamage)
+- Unit 사망 시 destroy() 직접 호출 금지
+- setActive(false) + setVisible(false) 로 비활성화 → BattleScene Pool이 회수
+- Task 4 unit-agent에서 BattleScene Pool 회수 로직 구현 예정

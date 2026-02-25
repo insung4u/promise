@@ -14,7 +14,8 @@ export class BattleScene extends Phaser.Scene {
     EventBus.emit('scene:ready', { sceneName: 'BattleScene' });
 
     // 임시 텍스트 — Task 3에서 실제 맵으로 교체
-    this.add.text(400, 300, '전투 씬 준비 중...', {
+    // 세로형 맵 390×480 기준 중앙 좌표 (195, 240)
+    this.add.text(195, 240, '전투 씬 준비 중...', {
       fontSize: '24px',
       color: '#ffffff',
     }).setOrigin(0.5);

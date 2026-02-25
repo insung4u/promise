@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { PlayerData, UnitData, UnitType } from '@/types';
+import { UnitFactory } from '@/game/entities/UnitFactory';
 
 interface PlayerStore {
   player: PlayerData;
@@ -9,24 +10,10 @@ interface PlayerStore {
   addResources: (amount: number) => void;
 }
 
-// 기본 유닛 데이터 생성 헬퍼
+// 기본 유닛 데이터 생성 헬퍼 — 단일 진실 소스(UnitFactory)에 위임
+// 스탯 테이블은 UnitFactory.getDefaultData()에서만 관리
 function makeUnit(id: string, type: UnitType): UnitData {
-  const stats: Record<UnitType, Pick<UnitData, 'hp' | 'maxHp' | 'attack' | 'defense' | 'speed' | 'range' | 'cargo' | 'foodCost'>> = {
-    infantry: { hp: 100, maxHp: 100, attack: 10, defense: 5,  speed: 80,  range: 1, cargo: 8, foodCost: 0.21 },
-    tank:     { hp: 200, maxHp: 200, attack: 20, defense: 15, speed: 50,  range: 3, cargo: 4, foodCost: 0.42 },
-    air:      { hp: 80,  maxHp: 80,  attack: 15, defense: 2,  speed: 120, range: 5, cargo: 2, foodCost: 0.35 },
-    special:  { hp: 150, maxHp: 150, attack: 25, defense: 10, speed: 60,  range: 8, cargo: 6, foodCost: 0.50 },
-  };
-
-  return {
-    id,
-    type,
-    tier: 1,
-    ...stats[type],
-    position: { x: 0, y: 0 },
-    skillCooldown: 0,
-    isAlive: true,
-  };
+  return UnitFactory.getDefaultData(type, id);
 }
 
 // 기본 덱 — 보병 5유닛
