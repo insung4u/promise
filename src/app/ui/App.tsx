@@ -4,7 +4,8 @@ import PhaserGame from './PhaserGame';
 // Task 2(ui-agent)에서 로비 화면, 덱 편성 등 UI가 추가될 때 상/하단 공간을 활용합니다.
 export default function App() {
   return (
-    <div className="flex items-center justify-center w-full h-[100dvh] bg-black">
+    // fixed inset-0 (position: fixed; top, bottom, left, right: 0) 을 사용하면 모바일 Safari(주소창 등) 환경에서도 물리적인 화면 상에 정확히 컨테이너가 꽉 맞춰집니다.
+    <div className="fixed inset-0 flex items-center justify-center w-full bg-black">
       {/* 가변적으로 화면을 채우는 메인 컨테이너 (iPhone 15 Pro 등 지원) - 오버레이 기준점 */}
       <div className="relative w-full h-full max-w-[430px] mx-auto overflow-hidden shadow-[0_0_15px_rgba(0,0,0,0.5)]">
 
