@@ -90,9 +90,10 @@ src/
 ### AI 에셋 자동 생성 (Image Generation)
 Claude, Cursor, Gemini 등 모든 AI 에이전트는 플레이스홀더를 사용하지 말고 아래 스크립트로 직접 스프라이트를 생성해 적용한다.
 ```bash
-node scripts/generate_sprite.mjs "프롬프트 내용" "저장할파일명.jpeg"
+node scripts/generate_sprite.mjs "프롬프트 내용" "폴더명/저장할파일명.jpeg"
 ```
 * **주의**: 루트 디렉토리의 `.env` 파일에 `GEMINI_API_KEY` 설정 확인. 프롬프트는 영어로 상세하게 작성 (`docs/asset_generation_guide.md` 참조).
+* **문서화 의무**: 이미지가 하위 디렉토리에 생성되면, **반드시 해당 디렉토리 내의 `README.md` 파일을 생성하거나 수정하여 어떤 이미지가 추가/수정되었는지 기록**해야 한다.
 
 ---
 

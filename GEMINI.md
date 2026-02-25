@@ -99,9 +99,10 @@ npm run lint     # eslint .
 ### AI 자동 이미지 생성
 Gemini, Claude Code 등 AI 어시스턴트는 더 이상 대충 만든 플레이스홀더를 쓰지 말고, 아래 스크립트로 **직접 에셋 스프라이트를 생성**하여 로컬에 저장한다.
 ```bash
-node scripts/generate_sprite.mjs "상세한 영문 프롬프트 (docs/asset_generation_guide.md 참조)" "파일명.jpeg"
+node scripts/generate_sprite.mjs "상세한 영문 프롬프트 (docs/asset_generation_guide.md 참조)" "폴더명/파일명.jpeg"
 ```
 * 루트에 `.env` (GEMINI_API_KEY) 설정 필수.
+* **문서화 의무**: 에셋이 저장된 각 폴더(예: `public/assets/units/`)에 `README.md` 파일을 생성/업데이트하여, 새로 추가하거나 수정한 이미지 목록을 반드시 기록해야 한다.
 ---
 
 ## Phase 1+ 로드맵 (MVP 이후)
