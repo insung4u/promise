@@ -51,6 +51,55 @@ unit-agent, ai-agent, skill-agent가 이 씬 위에서 작동하므로, 확장 �
 - LoadingScene → BattleScene: `this.scene.start('BattleScene')`
 - BattleScene → 결과 화면: `EventBus.emit('battle:end', result)` 발행 (React가 수신)
 
+## LoadingScene 스프라이트 로딩
+
+8방향 스프라이트 시스템: 4종 유닛 × 5방향 = **20개 파일** 로드.
+
+```typescript
+// LoadingScene.ts preload()
+const base = import.meta.env.BASE_URL;
+const UNIT_TYPES = ['infantry', 'tank', 'air', 'special'] as const;
+const DIRECTIONS = ['E', 'NE', 'N', 'SE', 'S'] as const;
+// W / NW / SW 는 Phaser flipX 처리 — 별도 파일 없음
+
+UNIT_TYPES.forEach(type => {
+  DIRECTIONS.forEach(dir => {
+    this.load.spritesheet(
+      `${type}_${dir}`,
+      `${base}assets/units/${type}/${type}_${dir}.jpeg`,
+      { frameWidth: 256, frameHeight: 256 }
+    );
+  });
+});
+```
+
+**애니메이션 등록 (BattleScene.create):**
+```typescript
+// 5방향 × 4애니메이션 × 4종 유닛 = 80개 등록
+const ANIM_DEFS = [
+  { suffix: 'idle',   frames: [0,1,2,3],     frameRate: 6,  repeat: -1 },
+  { suffix: 'walk',   frames: [4,5,6,7],     frameRate: 8,  repeat: -1 },
+  { suffix: 'attack', frames: [8,9,10,11],   frameRate: 10, repeat: 0  },
+  { suffix: 'death',  frames: [12,13,14,15], frameRate: 6,  repeat: 0  },
+];
+UNIT_TYPES.forEach(type => {
+  DIRECTIONS.forEach(dir => {
+    const key = `${type}_${dir}`;
+    ANIM_DEFS.forEach(({ suffix, frames, frameRate, repeat }) => {
+      this.anims.create({
+        key: `${key}_${suffix}`,
+        frames: this.anims.generateFrameNumbers(key, { frames }),
+        frameRate,
+        repeat,
+      });
+    });
+  });
+});
+```
+
+> **스프라이트 파일 미존재 시:** `asset-agent`의 generateTexture placeholder로 대체.
+> 파일 로드 실패는 `this.load.on('loaderror', ...)` 이벤트로 감지하고 fallback 처리.
+
 ## Phaser 설정 기준
 ```typescript
 // 반드시 WebGL2 강제

@@ -2,9 +2,29 @@
 
 이 폴더에는 게임 내 개별 유닛들의 스프라이트 시트 및 이미지 에셋이 저장됩니다.
 
+## 스프라이트 시트 공통 규격
+
+| 항목 | 값 |
+|---|---|
+| 레이아웃 | 4열 × 4행 = 16셀 |
+| 전체 해상도 | 1024 × 1024 px |
+| 셀 크기 | 256 × 256 px |
+| Phaser frameWidth | 256 |
+| Phaser frameHeight | 256 |
+| 프레임 0~3 | Idle (대기) |
+| 프레임 4~7 | Walk (이동) |
+| 프레임 8~11 | Attack (공격) |
+| 프레임 12~15 | Death (사망) |
+
 ## 에셋 목록
 
-- **`simple_hero.jpeg`** (2026-02-25 추가)
-  - **설명**: 걷기(Walk) 및 공격(Attack) 애니메이션 액션을 포함하는 4x4 그리드의 판타지 주인공 스프라이트 시트. 탑다운 뷰 기반의 고품질 픽셀 아트로, Google AI Pro (Imagen 4)로 생성되었습니다.
-  - **용도**: 게임 내 보병/주인공 캐릭터 유닛으로 활용 가능 (이후 Phaser 3에서 크로마키/배경 마스킹 및 스프라이트 분할 처리하여 사용 예정)
+현재 생성된 스프라이트 파일 없음.
+
+개발 초기에는 `asset-agent`의 Phaser `generateTexture` placeholder를 사용한다.
+실제 스프라이트가 필요할 때 아래 명령어로 생성:
+
+```bash
+node scripts/generate_spritesheet.mjs infantry   # 5방향 전체
+node scripts/generate_spritesheet.mjs infantry E  # E방향만
+```
 

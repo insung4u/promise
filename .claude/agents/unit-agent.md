@@ -70,10 +70,69 @@ class Unit extends Phaser.Physics.Arcade.Sprite {
 - 배경(빨강) + 현재HP(초록) 오버레이
 - `preUpdate`에서 유닛 위치 추적
 
-### 애니메이션
-- placeholder 단계: 색상 사각형 스프라이트 사용
-- 애니메이션 키: `${type}_idle`, `${type}_move`, `${type}_attack`
-- 스프라이트 미존재 시 Graphics로 대체 (빌드 실패 방지)
+### 8방향 스프라이트 시스템
+
+이 프로젝트는 자연스러운 이동 표현을 위해 8방향 스프라이트를 사용한다.
+
+**파일 구조:**
+```
+public/assets/units/<유닛타입>/
+  <유닛타입>_E.jpeg   (동)      → Phaser 키: 'infantry_E'
+  <유닛타입>_NE.jpeg  (북동)    → Phaser 키: 'infantry_NE'
+  <유닛타입>_N.jpeg   (북)      → Phaser 키: 'infantry_N'
+  <유닛타입>_SE.jpeg  (남동)    → Phaser 키: 'infantry_SE'
+  <유닛타입>_S.jpeg   (남)      → Phaser 키: 'infantry_S'
+  W  = E  + flipX  (Phaser 처리)
+  NW = NE + flipX  (Phaser 처리)
+  SW = SE + flipX  (Phaser 처리)
+```
+
+**스프라이트 규격:** 1024×1024px, `frameWidth: 256, frameHeight: 256`
+
+**애니메이션 키 네이밍:** `${type}_${direction}_${anim}`
+```typescript
+// 예: 보병 E방향
+'infantry_E_idle'    // 프레임 0~3
+'infantry_E_walk'    // 프레임 4~7
+'infantry_E_attack'  // 프레임 8~11
+'infantry_E_death'   // 프레임 12~15
+```
+
+**방향 판별 → 스프라이트 전환 (`moveTo` 내부에서 호출):**
+```typescript
+// 이동 각도(도)에 따라 스프라이트 키와 flipX 반환
+private getDirectionSprite(deg: number): { key: string; flipX: boolean } {
+  const t = this.unitData.type;
+  if (deg > -22.5  && deg <=  22.5)  return { key: `${t}_E`,  flipX: false };
+  if (deg >  22.5  && deg <=  67.5)  return { key: `${t}_NE`, flipX: false };
+  if (deg >  67.5  && deg <= 112.5)  return { key: `${t}_N`,  flipX: false };
+  if (deg > 112.5  && deg <= 157.5)  return { key: `${t}_NE`, flipX: true  }; // NW
+  if (deg > -67.5  && deg <= -22.5)  return { key: `${t}_SE`, flipX: false };
+  if (deg > -112.5 && deg <=  -67.5) return { key: `${t}_S`,  flipX: false };
+  if (deg > -157.5 && deg <= -112.5) return { key: `${t}_SE`, flipX: true  }; // SW
+  return { key: `${t}_E`, flipX: true }; // W
+}
+```
+
+**스프라이트 교체 및 애니메이션 재생:**
+```typescript
+moveTo(x: number, y: number): void {
+  const deg = Phaser.Math.RadToDeg(
+    Phaser.Math.Angle.Between(this.x, this.y, x, y)
+  );
+  const { key, flipX } = this.getDirectionSprite(deg);
+  // 방향이 바뀐 경우에만 스프라이트 교체 (성능)
+  if (this.texture.key !== key) {
+    this.setTexture(key);
+    this.play(`${key}_walk`);
+  }
+  this.setFlipX(flipX);
+  // ... 이동 physics 처리
+}
+```
+
+**placeholder 단계:** sprite-agent가 이미지를 생성하기 전에는
+`asset-agent`의 generateTexture 코드로 단색 도형을 사용한다.
 
 ## UnitFactory 패턴
 ```typescript

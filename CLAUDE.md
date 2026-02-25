@@ -89,6 +89,20 @@ src/
 
 ### AI 에셋 자동 생성 (Image Generation)
 Claude, Cursor, Gemini 등 모든 AI 에이전트는 플레이스홀더를 사용하지 말고 아래 스크립트로 직접 스프라이트를 생성해 적용한다.
+
+**8방향 스프라이트 시트 생성 (권장):**
+```bash
+# 전체 5방향 생성 (W/NW/SW는 Phaser flipX 처리)
+node scripts/generate_spritesheet.mjs <유닛타입>
+# 예) node scripts/generate_spritesheet.mjs infantry
+
+# 특정 방향만 생성 (E / NE / N / SE / S)
+node scripts/generate_spritesheet.mjs infantry E
+```
+* 출력: `public/assets/units/<유닛타입>/<유닛타입>_<방향>.jpeg`
+* 규격: 4×4 그리드, 1024×1024px, `frameWidth: 256, frameHeight: 256`
+
+**단일 이미지 생성 (레거시, 그리드 비보장):**
 ```bash
 node scripts/generate_sprite.mjs "프롬프트 내용" "폴더명/저장할파일명.jpeg"
 ```
@@ -116,6 +130,11 @@ Task 실행 순서:
 
 **사용자는 `pm-agent`에게만 지시한다.** PM이 나머지 에이전트를 조율한다.
 에이전트 목록, 호출 시점, 실행 순서 의존성은 `.claude/README.md` 참조.
+
+| 에이전트 | 역할 요약 |
+|---|---|
+| `asset-agent` | Phaser `generateTexture` 코드로 런타임 placeholder 생성 |
+| `sprite-agent` | Gemini Imagen API → 실제 JPEG 스프라이트 시트 생성 전담 |
 
 ---
 

@@ -42,7 +42,8 @@ memory: project
 | `bridge-agent` | EventBus 이벤트 설계 및 버그 |
 | `types-agent` | 타입 에러, 인터페이스 변경 |
 | `performance-agent` | FPS 저하, 메모리 누수 |
-| `asset-agent` | placeholder 스프라이트/애셋 |
+| `asset-agent` | Phaser generateTexture 코드 기반 placeholder |
+| `sprite-agent` | AI 이미지 생성 (Gemini Imagen → 실제 JPEG 스프라이트 시트) |
 | `test-agent` | 단위 테스트 작성 및 실행 |
 
 ---
@@ -111,6 +112,8 @@ types/performance/asset/test ← 언제든 독립 실행
 | "FPS가 느려" | performance-agent 호출 |
 | "EventBus 설계해줘" | bridge-agent 호출 |
 | "테스트 작성해줘" | test-agent 호출 |
+| "스프라이트 만들어줘" | sprite-agent 호출 |
+| "유닛 이미지 생성해줘" | sprite-agent 호출 |
 | "처음부터 다 만들어줘" | Task 1→7 순서대로 순차 실행 |
 
 ---
