@@ -26,6 +26,8 @@ dist-ssr
 
 # Environment values
 .env
+.env.*
+!.env.example
 
 # AI / Custom Agent Folders
 .claude/
