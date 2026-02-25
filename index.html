@@ -33,6 +33,13 @@
       manifestLink.rel = 'manifest';
       manifestLink.href = isKorean ? '/manifest_ko.json' : '/manifest_en.json';
       document.head.appendChild(manifestLink);
+
+      // 화면 세로 고정 시도 (지원하는 브라우저의 경우)
+      if (screen.orientation && screen.orientation.lock) {
+        screen.orientation.lock('portrait').catch(function (error) {
+          console.log('Orientation lock not supported or failed: ', error);
+        });
+      }
     })();
 
     if ('serviceWorker' in navigator) {

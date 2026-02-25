@@ -3,6 +3,7 @@
     "short_name": "머나먼약속",
     "start_url": ".",
     "display": "fullscreen",
+    "orientation": "portrait",
     "background_color": "#0a0a1a",
     "theme_color": "#1a1a2e",
     "description": "모바일 RTS 게임",

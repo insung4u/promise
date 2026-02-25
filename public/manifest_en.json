@@ -3,6 +3,7 @@
     "short_name": "ADistant...",
     "start_url": ".",
     "display": "fullscreen",
+    "orientation": "portrait",
     "background_color": "#0a0a1a",
     "theme_color": "#1a1a2e",
     "description": "Mobile RTS Game",
