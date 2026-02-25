@@ -33,10 +33,10 @@ src/app/ui/
 
 | 병과 | 스킬명 | 효과 | 쿨타임 | 지속시간 |
 |---|---|---|---|---|
-| 보병 (infantry) | 돌진 (charge) | 속도 2.5× + 사정거리 내 즉시 공격 | 15초 | 3초 |
-| 전차 (tank) | 포격 (barrage) | 전방 반경 100px 범위 피해 (ATK × 3) | 20초 | 즉시 |
-| 공군 (air) | 폭격 (airstrike) | 지정 영역(200px) 다단 피해 × 5회 | 25초 | 2초 |
-| 특수 (special) | 힐 (heal) | 아군 유닛 전체 HP 30% 회복 | 20초 | 즉시 |
+| 보병 (infantry) | 돌진 (charge) | 보병 전체 2초간 속도 2배 | 8초 | 2초 |
+| 전차 (tank) | 포격 (barrage) | 지정 범위 내 적 전체 데미지 | 12초 | 즉시 |
+| 공군 (air) | 폭격 (airstrike) | 가장 큰 적 집단에 광역 폭격 | 15초 | 2초 |
+| 특수 (special) | 힐 (heal) | HP 가장 낮은 아군 유닛 50% 회복 | 10초 | 즉시 |
 
 ---
 
@@ -60,10 +60,10 @@ export class SkillSystem {
   private cooldowns = new Map<string, number>();
 
   private readonly COOLDOWNS_MS: Record<SkillType, number> = {
-    charge:    15000,
-    barrage:   20000,
-    airstrike: 25000,
-    heal:      20000,
+    charge:     8000,
+    barrage:   12000,
+    airstrike: 15000,
+    heal:      10000,
   };
 
   constructor(
@@ -117,16 +117,18 @@ export class SkillSystem {
     return map[type] ?? 'charge';
   }
 
-  // 돌진: 3초간 속도 2.5×, 사정거리 내 적 즉시 공격
+  // 돌진: 2초간 보병 전체 속도 2배
   private doCharge(unit: Unit): void {
-    const origSpeed = unit.unitData.speed;
-    unit.setSpeed(origSpeed * 2.5);
-    // 가장 가까운 적 즉시 공격
-    const nearest = this.getNearestEnemy(unit);
-    if (nearest) nearest.takeDamage(unit.unitData.attack * 2);
-
-    this.scene.time.delayedCall(3000, () => {
-      unit.setSpeed(origSpeed);
+    // 보병 유닛 전체에 적용
+    const infantryUnits = this.getPlayerUnits().filter(
+      (u) => u.isAlive && u.unitData.type === 'infantry'
+    );
+    infantryUnits.forEach((u) => {
+      const origSpeed = u.unitData.speed;
+      u.setSpeed(origSpeed * 2);
+      this.scene.time.delayedCall(2000, () => {
+        u.setSpeed(origSpeed);
+      });
     });
   }
 
@@ -163,14 +165,16 @@ export class SkillSystem {
     });
   }
 
-  // 힐: 아군 유닛 전체 HP 30% 회복
+  // 힐: HP 가장 낮은 아군 유닛 50% 회복
   private doHeal(): void {
-    this.getPlayerUnits()
-      .filter((u) => u.isAlive)
-      .forEach((u) => {
-        const healAmount = Math.round(u.unitData.maxHp * 0.3);
-        u.heal(healAmount);
-      });
+    const aliveUnits = this.getPlayerUnits().filter((u) => u.isAlive);
+    if (aliveUnits.length === 0) return;
+    // HP 비율이 가장 낮은 유닛 선택
+    const target = aliveUnits.sort(
+      (a, b) => (a.unitData.hp / a.unitData.maxHp) - (b.unitData.hp / b.unitData.maxHp)
+    )[0];
+    const healAmount = Math.round(target.unitData.maxHp * 0.5);
+    target.heal(healAmount);
   }
 
   private getNearestEnemy(unit: Unit): Unit | null {
@@ -265,7 +269,7 @@ interface HUDState {
 
 - [ ] 4종 스킬 발동 및 시각 효과 확인
 - [ ] 스킬 쿨타임 표시 (HUD 스킬 버튼 오버레이)
-- [ ] 공격 모드: 적 전멸 or 거점 2/3 점령 → 승리 판정
+- [ ] 공격 모드: 적 전멸 OR 거점 2개 이상 점령 → 승리 판정 (둘 중 하나 충족 시)
 - [ ] 방어 모드: 시간 초과 → 거점 유지 수로 승패 판정
 - [ ] 플레이어 전멸 → 패배 판정
 - [ ] `battle:result` EventBus 이벤트 → React 결과 화면 전환

@@ -51,11 +51,11 @@ import type { UnitData } from '@/types';
 /**
  * 전투 유닛 기반 클래스
  * 모든 유닛 타입이 상속한다.
+ * Arcade Physics를 활용해 물리 이동을 처리한다.
  * update() 내 new 생성 금지 — 이동 벡터는 멤버 변수로 재사용.
  */
-export class Unit extends Phaser.GameObjects.Container {
+export class Unit extends Phaser.Physics.Arcade.Sprite {
   private data: UnitData;
-  private sprite!: Phaser.GameObjects.Rectangle;  // Placeholder
   private hpBar!: Phaser.GameObjects.Graphics;
   private hpBarBg!: Phaser.GameObjects.Rectangle;
   private moveTarget: Phaser.Math.Vector2 | null = null;
@@ -65,30 +65,29 @@ export class Unit extends Phaser.GameObjects.Container {
   private readonly _velocity = new Phaser.Math.Vector2();
 
   constructor(scene: Phaser.Scene, data: UnitData) {
-    super(scene, data.position.x, data.position.y);
+    super(scene, data.position.x, data.position.y, data.type);
     this.data = { ...data };
-    this.buildSprite();
-    this.buildHpBar();
     scene.add.existing(this);
+    scene.physics.add.existing(this);
+    this.setTint(this.getTintByType(data.type));
+    this.buildHpBar();
   }
 
-  private buildSprite(): void {
+  private getTintByType(type: UnitData['type']): number {
     const colors: Record<string, number> = {
       infantry: 0x4488ff,
       tank:     0xffaa00,
       air:      0x44ffcc,
       special:  0xff44aa,
     };
-    this.sprite = this.scene.add.rectangle(0, 0, 28, 28, colors[this.data.type]);
-    this.add(this.sprite);
+    return colors[type] ?? 0xffffff;
   }
 
   private buildHpBar(): void {
     // 배경 (회색)
-    this.hpBarBg = this.scene.add.rectangle(0, -22, 28, 4, 0x333333);
+    this.hpBarBg = this.scene.add.rectangle(this.x, this.y - 22, 28, 4, 0x333333);
     // HP (녹색 → 빨강으로 변화)
     this.hpBar = this.scene.add.graphics();
-    this.add([this.hpBarBg, this.hpBar]);
     this.redrawHpBar();
   }
 
@@ -97,7 +96,8 @@ export class Unit extends Phaser.GameObjects.Container {
     const color = ratio > 0.5 ? 0x44ff44 : ratio > 0.25 ? 0xffff00 : 0xff4444;
     this.hpBar.clear();
     this.hpBar.fillStyle(color);
-    this.hpBar.fillRect(-14, -24, 28 * ratio, 4);
+    this.hpBar.fillRect(this.x - 14, this.y - 24, 28 * ratio, 4);
+    this.hpBarBg.setPosition(this.x, this.y - 22);
   }
 
   // 이동 목표 설정 (CommandSystem / AutoAI에서 호출)
@@ -122,6 +122,9 @@ export class Unit extends Phaser.GameObjects.Container {
     this.data.isAlive = false;
     this.setVisible(false);
     this.setActive(false);
+    this.hpBar.setVisible(false);
+    this.hpBarBg.setVisible(false);
+    if (this.body) (this.body as Phaser.Physics.Arcade.Body).setVelocity(0, 0);
   }
 
   // 속도 변경 (스킬 돌진 등에서 사용)
@@ -139,8 +142,12 @@ export class Unit extends Phaser.GameObjects.Container {
   get unitData(): UnitData { return this.data; }
   get attackRange(): number { return this.data.range * 50; }   // 픽셀 변환
 
-  preUpdate(_time: number, delta: number): void {
-    if (!this._isAlive || !this.moveTarget) return;
+  preUpdate(time: number, delta: number): void {
+    super.preUpdate(time, delta);
+    if (!this._isAlive || !this.moveTarget) {
+      if (this.body) (this.body as Phaser.Physics.Arcade.Body).setVelocity(0, 0);
+      return;
+    }
 
     const dx = this.moveTarget.x - this.x;
     const dy = this.moveTarget.y - this.y;
@@ -148,13 +155,17 @@ export class Unit extends Phaser.GameObjects.Container {
 
     if (dist < 4) {
       this.moveTarget = null;
+      if (this.body) (this.body as Phaser.Physics.Arcade.Body).setVelocity(0, 0);
       return;
     }
 
-    const speed = this.data.speed * (delta / 1000);
+    const speed = this.data.speed;
     this._velocity.set(dx / dist * speed, dy / dist * speed);
-    this.x += this._velocity.x;
-    this.y += this._velocity.y;
+    if (this.body) {
+      (this.body as Phaser.Physics.Arcade.Body).setVelocity(this._velocity.x, this._velocity.y);
+    }
+    // HP 바 위치 동기화
+    this.redrawHpBar();
   }
 }
 ```
