@@ -1,21 +1,22 @@
 {
-    "name": "머나먼약속 (A Distant Promise)",
+    "name": "머나먼약속",
     "short_name": "머나먼약속",
     "start_url": ".",
-    "display": "standalone",
+    "display": "fullscreen",
     "background_color": "#0a0a1a",
     "theme_color": "#1a1a2e",
     "description": "모바일 RTS 게임",
     "icons": [
         {
-            "src": "/vite.svg",
+            "src": "/icon-192x192.png",
             "sizes": "192x192",
-            "type": "image/svg+xml"
+            "type": "image/png",
+            "purpose": "any maskable"
         },
         {
-            "src": "/vite.svg",
+            "src": "/icon-512x512.png",
             "sizes": "512x512",
-            "type": "image/svg+xml"
+            "type": "image/png"
         }
     ]
 }

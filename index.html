@@ -1,21 +1,48 @@
 <!doctype html>
 <html lang="ko">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <!-- 전체화면 및 줌 방지 (모바일 게임 필수) -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <!-- PWA / 모바일 웹앱 풀스크린 지원 (iOS Safari 메뉴바 숨김 효과) -->
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <link rel="manifest" href="/manifest.json" />
-    
-    <meta name="theme-color" content="#1a1a2e" />
-    <title>머나먼약속 (A Distant Promise)</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/png" href="/icon-192x192.png" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <!-- 전체화면 및 줌 방지 (모바일 게임 필수) -->
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <!-- PWA / 모바일 웹앱 풀스크린 지원 (iOS Safari 메뉴바 숨김 효과) -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="mobile-web-app-capable" content="yes" />
+
+
+  <meta name="theme-color" content="#1a1a2e" />
+  <title>머나먼약속 (A Distant Promise)</title>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+  <script>
+    (function () {
+      // 다국어 제목 설정
+      const userLang = navigator.language || navigator.userLanguage;
+      const isKorean = userLang.startsWith('ko');
+      document.title = isKorean ? "머나먼약속" : "A Distant Promise";
+
+      // 다국어 모바일 홈 화면 아이콘(Manifest) 설정
+      const manifestLink = document.createElement('link');
+      manifestLink.rel = 'manifest';
+      manifestLink.href = isKorean ? '/manifest_ko.json' : '/manifest_en.json';
+      document.head.appendChild(manifestLink);
+    })();
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(err => {
+          console.log('SW registration failed: ', err);
+        });
+      });
+    }
+  </script>
+</body>
+
 </html>
