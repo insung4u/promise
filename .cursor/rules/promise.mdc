@@ -1,0 +1,41 @@
+---
+description: 머나먼약속 프로젝트 전역 규칙 — 모든 파일 편집 시 적용
+globs: ["**/*.ts", "**/*.tsx", "**/*.js"]
+alwaysApply: true
+---
+
+# 머나먼약속 (A Distant Promise) — Cursor Project Rules
+
+전체 PRD: `docs/prd.md` / 범용 가이드: `AGENTS.md`
+
+## 아키텍처 제약
+
+- `src/game/` 폴더는 Phaser 전용. React import 금지.
+- `src/app/` 폴더는 React 전용. Phaser import 금지.
+- React ↔ Phaser 통신: `src/game/core/EventBus.ts` 경유만 허용.
+- 전역 상태: Zustand(`src/app/store/`) 만 사용.
+- 타입 정의: `src/types/index.ts` 한 파일에만.
+
+## 코딩 규칙
+
+- TypeScript `strict: true`. `any` 사용 시 컴파일 오류로 처리.
+- React 컴포넌트: 함수형만. `export default function Foo()` 형식.
+- 클래스 및 복잡한 함수 상단에 한글 주석 작성.
+- `import.meta.env.BASE_URL` 기반 asset 경로. `/assets/` 절대경로 금지.
+
+## 성능 제약
+
+- `update()` 루프(Phaser Scene) 내 `new` 키워드 사용 금지.
+- 투사체, 파티클 등은 Object Pool에서 꺼내 재사용.
+- 목표 프레임: 60FPS (10유닛 + 20발 투사체 기준).
+
+## 파일 생성 가이드
+
+| 파일 종류 | 위치 |
+|---|---|
+| Zustand 스토어 슬라이스 | `src/app/store/*.ts` |
+| React 화면 컴포넌트 | `src/app/ui/*.tsx` |
+| Phaser Scene | `src/game/scenes/*.ts` |
+| 게임 엔티티 (Unit 등) | `src/game/entities/*.ts` |
+| 게임 시스템 (AI 등) | `src/game/systems/*.ts` |
+| 공용 타입 | `src/types/index.ts` (기존 파일에 추가) |

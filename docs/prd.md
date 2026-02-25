@@ -225,6 +225,9 @@ export interface BattleResult {
 
 > 아래 시스템들은 Phase 0 MVP에 포함되지 않으나, 게임 전체 비전에서 핵심 콘텐츠다.
 > Phase 1 착수 시 별도 PRD 문서로 세분화한다.
+>
+> 상세 시스템 레퍼런스 (유닛 스탯 수치, 건물 체계, 자원 설계, 기술 연구 트리):
+> **`docs/game-systems-reference.md`** 참조
 
 ### 10-1. 영토 지도 시스템
 - 수도에서 시작하여 인접 영토를 점령해 나가는 세계 지도
