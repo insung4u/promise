@@ -1,0 +1,136 @@
+# CLAUDE.md — 머나먼약속 (A Distant Promise)
+
+> 이 파일은 Claude Code가 매 세션마다 자동으로 읽는 프로젝트 지침서다.
+> PRD 전체 내용은 `docs/prd.md`를 참조한다.
+
+---
+
+## 프로젝트 개요
+
+- **장르**: 모바일 RTS (택티컬 커멘더스 스타일, 싱글플레이어)
+- **Phase**: 0 — 클라이언트-only MVP (서버 없음)
+- **목표**: 5유닛 매크로 컨트롤 + 오토 전투 + 터치 명령 재미 검증
+
+---
+
+## Tech Stack
+
+| 역할 | 패키지 | 버전 |
+|---|---|---|
+| 번들러 | Vite | 5.4+ |
+| UI 프레임워크 | React | 19 |
+| 언어 | TypeScript | 5.6 (strict 필수) |
+| 게임 엔진 | Phaser | 3.80+ (WebGL2 강제, Arcade Physics) |
+| 상태관리 | Zustand | 4.5 |
+| 스타일 | TailwindCSS + shadcn/ui | 3.4 |
+| React↔Phaser 통신 | EventEmitter3 | latest |
+| 터치 | Hammer.js 또는 Phaser 내장 | - |
+| PWA→앱 | Capacitor | 6 |
+
+---
+
+## 폴더 구조 (변경 금지)
+
+```
+src/
+├── app/
+│   ├── store/          # Zustand 슬라이스만
+│   └── ui/             # React 컴포넌트만
+├── game/
+│   ├── core/           # Game.ts, EventBus.ts, SceneManager.ts
+│   ├── entities/       # Unit.ts, UnitFactory.ts, Projectile.ts
+│   ├── scenes/         # BattleScene.ts, LoadingScene.ts
+│   └── systems/        # AutoAI.ts, CommandSystem.ts, SkillSystem.ts
+├── types/
+│   └── index.ts        # 모든 인터페이스 — 유일한 타입 정의 파일
+├── lib/
+│   └── utils.ts
+└── main.tsx
+```
+
+---
+
+## 절대 규칙 (위반 금지)
+
+### 아키텍처
+- Phaser 로직은 `game/` 폴더에만. React 파일에 Phaser 코드 작성 금지.
+- React는 `PhaserGame` 컴포넌트 → EventBus 경유로만 Phaser와 통신.
+- React에서 Phaser 인스턴스 직접 참조 금지 (`game.scene.getScene()` 등).
+- 상태관리는 Zustand만. Redux, Context API, 기타 라이브러리 도입 금지.
+- 타입은 `types/index.ts` 한 곳에만 정의. 인라인 타입 정의 금지.
+
+### 코드 스타일
+- TypeScript `strict: true` 유지. `any` 사용 절대 금지.
+- React 컴포넌트는 함수형만. 클래스 컴포넌트 금지.
+- 모든 클래스 및 중요 함수 위에 **한글 주석** 필수.
+
+### 성능
+- 모바일 저사양 기준: 10유닛 + 20발 투사체 → 60FPS 유지.
+- `update()` 루프 내 `new` 객체 생성 금지 (Object Pool 사용).
+- Graphics 객체는 값 변경 시에만 재드로우.
+
+---
+
+## 배포 규칙
+
+```json
+// package.json scripts
+{
+  "dev":     "vite",
+  "build":   "tsc -b && vite build",
+  "preview": "vite build && vite preview",
+  "lint":    "eslint ."
+}
+```
+
+- `npm run preview` = 빌드 후 로컬 서빙 → Vercel 결과와 동일 동작 보장.
+- asset 경로는 `import.meta.env.BASE_URL` 기반 사용. 절대 경로(`/assets/`) 금지.
+- `vercel.json` SPA fallback rewrite 필수.
+
+---
+
+## Sub-agent
+
+**사용자는 `pm-agent`에게만 지시한다.** PM이 나머지 에이전트를 조율한다.
+에이전트 목록, 호출 시점, 실행 순서 의존성은 `.claude/README.md` 참조.
+
+---
+
+## 핵심 데이터 모델 요약
+
+```typescript
+// types/index.ts 기준
+UnitData    → id, type('infantry'|'tank'|'air'|'special'), tier(1~6), hp, attack, speed...
+PlayerData  → resources, fame, rank('soldier'|'general'|'marquis'|'duke'), allUnits(24), deck(5)
+CapturePoint → id, x, y, owner('player'|'enemy'|'neutral'), hp
+BattleResult → result('win'|'lose'), survivalCount, timeElapsed, resourceReward, fameReward
+```
+
+---
+
+## 전투 화면 레이아웃
+
+```
+┌─────────────────────────────────────────┐
+│  타이머               점수              │  ← HUD
+├──────────┬──────────────────────────────┤
+│          │                              │
+│  스와이프 │       Phaser 맵              │
+│  명령 존  │    (거점 3개, 유닛들)         │
+│  (30%)   │                              │
+│          │                    [스킬1~4] │
+│          │                  [오토/수동]  │
+└──────────┴──────────────────────────────┘
+```
+
+---
+
+## MVP Task 순서
+
+1. 프로젝트 생성 + 아키텍처 (`architect-agent`)
+2. 로비 화면 (`ui-agent`)
+3. BattleScene 기본 (`scene-agent`)
+4. 4종 유닛 (`unit-agent`)
+5. AutoAI + CommandSystem (`ai-agent`)
+6. SkillSystem + 승패 판정 (`skill-agent`)
+7. PWA + 배포 최적화 (`deploy-agent`)
