@@ -120,13 +120,13 @@ export class SkillSystem {
   // 돌진: 3초간 속도 2.5×, 사정거리 내 적 즉시 공격
   private doCharge(unit: Unit): void {
     const origSpeed = unit.unitData.speed;
-    (unit.unitData as { speed: number }).speed = origSpeed * 2.5;
+    unit.setSpeed(origSpeed * 2.5);
     // 가장 가까운 적 즉시 공격
     const nearest = this.getNearestEnemy(unit);
     if (nearest) nearest.takeDamage(unit.unitData.attack * 2);
 
     this.scene.time.delayedCall(3000, () => {
-      (unit.unitData as { speed: number }).speed = origSpeed;
+      unit.setSpeed(origSpeed);
     });
   }
 
@@ -168,8 +168,8 @@ export class SkillSystem {
     this.getPlayerUnits()
       .filter((u) => u.isAlive)
       .forEach((u) => {
-        const heal = Math.round(u.unitData.maxHp * 0.3);
-        (u.unitData as { hp: number }).hp = Math.min(u.unitData.maxHp, u.unitData.hp + heal);
+        const healAmount = Math.round(u.unitData.maxHp * 0.3);
+        u.heal(healAmount);
       });
   }
 

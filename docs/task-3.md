@@ -121,6 +121,17 @@ import { ObjectPool } from '../entities/ObjectPool';
 import type { CapturePoint, UnitData } from '@/types';
 
 /**
+ * 전투 유닛의 최소 인터페이스
+ * Task 3에서는 Unit 클래스가 아직 없으므로, 거점 점령 판정에 필요한 최소 속성만 정의한다.
+ * Task 4에서 Unit 클래스가 이 인터페이스를 만족하도록 구현한다.
+ */
+interface BattleUnit {
+  x: number;
+  y: number;
+  isAlive: boolean;
+}
+
+/**
  * 전투 씬 메인
  * 맵 렌더링, 거점 관리, Object Pool 초기화를 담당한다.
  */
@@ -132,9 +143,9 @@ export class BattleScene extends Phaser.Scene {
   private mode: 'attack' | 'defense' = 'attack';
   private hudTimer = 0;        // HUD 이벤트 throttle (1초 간격)
 
-  // Task 4에서 채워짐 — 거점 점령 판정에 사용
-  playerUnits: Unit[] = [];
-  enemyUnits:  Unit[] = [];
+  // Task 4에서 Unit 클래스 인스턴스로 채워짐 — BattleUnit 인터페이스만 요구
+  playerUnits: BattleUnit[] = [];
+  enemyUnits:  BattleUnit[] = [];
 
   // 거점 비주얼 오브젝트 (id → Graphics)
   private cpGraphics = new Map<number, Phaser.GameObjects.Graphics>();
@@ -225,13 +236,14 @@ export class BattleScene extends Phaser.Scene {
   }
 
   /**
-   * 거점 점령 진행 메커니즘
+   * 거점 점령 진행 메커니즘 (2단계: 해체 → 재점령)
    * 거점 반경(50px) 내 아군/적군 유닛 수에 따라 captureProgress 증감.
-   * progress 0~100 → 100 도달 시 owner 변경.
    *
    * 규칙:
-   *   아군 유닛만 있을 때: +20/초
-   *   적군 유닛만 있을 때: -20/초 (적군 입장에서는 점령)
+   *   1단계 (해체): 거점 소유자가 아닌 진영의 유닛만 있을 때 → progress 감소
+   *                 progress가 0 도달 → owner를 'neutral'로 리셋
+   *   2단계 (점령): 중립 거점 + 한쪽 진영 유닛만 있을 때 → progress 증가
+   *                 progress가 100 도달 → owner를 해당 진영으로 변경
    *   혼재 또는 아무도 없을 때: 변화 없음
    */
   private updateCaptureProgress(delta: number): void {
@@ -246,25 +258,55 @@ export class BattleScene extends Phaser.Scene {
         (u) => u.isAlive && Math.hypot(u.x - cp.x, u.y - cp.y) <= CAPTURE_RADIUS
       ).length;
 
+      const prevProgress = cp.captureProgress;
+
       if (playerNear > 0 && enemyNear === 0) {
-        // 아군만 → 점령 진행
-        cp.captureProgress = Math.min(100, cp.captureProgress + CAPTURE_RATE * (delta / 1000));
-        if (cp.captureProgress >= 100 && cp.owner !== 'player') {
-          cp.owner = 'player';
-          this.redrawCapturePoint(cp);
+        if (cp.owner === 'player') {
+          // 이미 아군 거점 — 변화 없음 (방어 중)
+        } else if (cp.owner === 'neutral') {
+          // 2단계: 중립 거점 → 아군 점령 진행 (0→100)
+          cp.captureProgress = Math.min(100, cp.captureProgress + CAPTURE_RATE * (delta / 1000));
+          if (cp.captureProgress >= 100) {
+            cp.owner = 'player';
+            cp.captureProgress = 100;
+            this.redrawCapturePoint(cp);
+          }
+        } else {
+          // 1단계: 적군 거점 → 해체 (progress 감소)
+          cp.captureProgress = Math.max(0, cp.captureProgress - CAPTURE_RATE * (delta / 1000));
+          if (cp.captureProgress <= 0) {
+            cp.owner = 'neutral';
+            cp.captureProgress = 0;
+            this.redrawCapturePoint(cp);
+          }
         }
       } else if (enemyNear > 0 && playerNear === 0) {
-        // 적군만 → 점령 역전
-        cp.captureProgress = Math.max(0, cp.captureProgress - CAPTURE_RATE * (delta / 1000));
-        if (cp.captureProgress <= 0 && cp.owner !== 'enemy') {
-          cp.owner = 'enemy';
-          this.redrawCapturePoint(cp);
+        if (cp.owner === 'enemy') {
+          // 이미 적군 거점 — 변화 없음 (방어 중)
+        } else if (cp.owner === 'neutral') {
+          // 2단계: 중립 거점 → 적군 점령 진행 (0→100)
+          cp.captureProgress = Math.min(100, cp.captureProgress + CAPTURE_RATE * (delta / 1000));
+          if (cp.captureProgress >= 100) {
+            cp.owner = 'enemy';
+            cp.captureProgress = 100;
+            this.redrawCapturePoint(cp);
+          }
+        } else {
+          // 1단계: 아군 거점 → 해체 (progress 감소)
+          cp.captureProgress = Math.max(0, cp.captureProgress - CAPTURE_RATE * (delta / 1000));
+          if (cp.captureProgress <= 0) {
+            cp.owner = 'neutral';
+            cp.captureProgress = 0;
+            this.redrawCapturePoint(cp);
+          }
         }
       }
       // 혼재 또는 아무도 없으면 변화 없음
 
       // 프로그레스 링 업데이트 (값 변경 시에만)
-      this.updateCaptureRing(cp);
+      if (cp.captureProgress !== prevProgress) {
+        this.updateCaptureRing(cp);
+      }
     }
   }
 

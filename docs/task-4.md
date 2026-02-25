@@ -124,6 +124,17 @@ export class Unit extends Phaser.GameObjects.Container {
     this.setActive(false);
   }
 
+  // 속도 변경 (스킬 돌진 등에서 사용)
+  setSpeed(speed: number): void {
+    this.data.speed = speed;
+  }
+
+  // HP 회복 (스킬 힐 등에서 사용, maxHp 초과 불가)
+  heal(amount: number): void {
+    this.data.hp = Math.min(this.data.maxHp, this.data.hp + amount);
+    this.redrawHpBar();
+  }
+
   get isAlive(): boolean { return this._isAlive; }
   get unitData(): UnitData { return this.data; }
   get attackRange(): number { return this.data.range * 50; }   // 픽셀 변환

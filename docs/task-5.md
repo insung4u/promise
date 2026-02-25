@@ -63,18 +63,22 @@ import type { CapturePoint } from '@/types';
 /**
  * 자동 전투 AI
  * 매 프레임 플레이어/적 유닛의 행동을 결정한다.
+ * faction 파라미터로 진영을 구분하여, 플레이어/적군 양쪽에 재사용 가능.
  * update() 내 new 금지 — 모든 재사용 객체는 ObjectPool 또는 멤버 변수.
  */
 export class AutoAI {
   private attackCooldowns = new Map<string, number>();
   private readonly ATTACK_INTERVAL = 1000; // ms
   private projPool: ObjectPool;
+  private faction: 'player' | 'enemy';
 
   constructor(
     private scene: Phaser.Scene,
-    projPool: ObjectPool
+    projPool: ObjectPool,
+    faction: 'player' | 'enemy' = 'player'
   ) {
     this.projPool = projPool;
+    this.faction = faction;
   }
 
   /**
@@ -156,11 +160,12 @@ export class AutoAI {
   }
 
   /**
-   * 점령 우선순위: 중립 > 적 점령 (가장 가까운 것)
+   * 점령 우선순위: 중립 > 상대 점령 (가장 가까운 것)
+   * this.faction으로 자기 진영을 판별하여, 양측 AI에 동일하게 재사용 가능.
    */
   private findPriorityCP(unit: Unit, cps: CapturePoint[]): CapturePoint | null {
     const targets = cps
-      .filter((cp) => cp.owner !== 'player')
+      .filter((cp) => cp.owner !== this.faction)
       .sort((a, b) => {
         const da = Math.hypot(a.x - unit.x, a.y - unit.y);
         const db = Math.hypot(b.x - unit.x, b.y - unit.y);

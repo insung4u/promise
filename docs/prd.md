@@ -71,7 +71,11 @@ export interface UnitData {
   hp: number;
   maxHp: number;
   attack: number;
+  defense: number;
   speed: number;
+  range: number;          // 사정거리 (타일 수): 1=근접, 3~5=단거리, 8~10=장거리
+  cargo: number;          // 적재량 (Phase 1+ 자원 채집용)
+  foodCost: number;       // 식량소모/시간 (Phase 1+ 유지비용)
   position: { x: number; y: number };
   target?: { x: number; y: number };
   skillCooldown: number;
@@ -92,6 +96,7 @@ export interface CapturePoint {
   y: number;
   owner: 'player' | 'enemy' | 'neutral';
   hp: number;
+  captureProgress: number; // 0~100 점령 진행률
 }
 
 export interface BattleResult {
