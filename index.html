@@ -15,29 +15,35 @@
 
 
   <meta name="theme-color" content="#1a1a2e" />
-  <title>머나먼약속 (A Distant Promise)</title>
+  <title>머나먼약속</title>
+  <link rel="manifest" href="/manifest.json" />
 </head>
 
 <body>
+  <!-- 화면 가로 회전 방지 오버레이 -->
+  <div id="landscape-warning" style="display: none;">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+      stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 20px; animation: spin 2s linear infinite;">
+      <path d="M21.5 2v6h-6M2.13 15.57a9 9 0 1 0 13.3-11.75" />
+    </svg>
+    <h2 style="font-size: 1.5rem; margin-bottom: 0.5rem;">세로 모드로 돌려주세요</h2>
+    <p style="color: #cbd5e1; font-size: 0.9rem;">이 게임은 세로 화면 전용입니다.</p>
+  </div>
+
   <div id="root"></div>
   <script type="module" src="/src/main.tsx"></script>
   <script>
     (function () {
-      // 다국어 제목 설정
-      const userLang = navigator.language || navigator.userLanguage;
-      const isKorean = userLang.startsWith('ko');
-      document.title = isKorean ? "머나먼약속" : "A Distant Promise";
-
-      // 다국어 모바일 홈 화면 아이콘(Manifest) 설정
-      const manifestLink = document.createElement('link');
-      manifestLink.rel = 'manifest';
-      manifestLink.href = isKorean ? '/manifest_ko.json' : '/manifest_en.json';
-      document.head.appendChild(manifestLink);
+      // 다국어 제목 동적 적용(탭)
+      const isKorean = navigator.language.startsWith('ko');
+      if (!isKorean) {
+        document.title = "A Distant Promise";
+      }
 
       // 화면 세로 고정 시도 (지원하는 브라우저의 경우)
       if (screen.orientation && screen.orientation.lock) {
         screen.orientation.lock('portrait').catch(function (error) {
-          console.log('Orientation lock not supported or failed: ', error);
+          console.log('Orientation lock not supported: ', error);
         });
       }
     })();

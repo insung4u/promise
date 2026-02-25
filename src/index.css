@@ -23,3 +23,24 @@ canvas {
   image-rendering: pixelated;
   image-rendering: crisp-edges;
 }
+
+/* 가로 회전 방지 (오버레이 표시) */
+#landscape-warning {
+  display: none !important;
+  position: fixed;
+  inset: 0;
+  background-color: rgba(10, 10, 26, 0.95);
+  z-index: 99999;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: #fff;
+  text-align: center;
+  backdrop-filter: blur(10px);
+}
+
+@media screen and (orientation: landscape) and (max-height: 600px) {
+  #landscape-warning {
+    display: flex !important;
+  }
+}
