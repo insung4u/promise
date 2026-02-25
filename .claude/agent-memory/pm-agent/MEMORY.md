@@ -91,3 +91,12 @@ Task 2, 3은 병렬 착수 가능 (Task 1 완료 기반)
 - Unit 사망 시 destroy() 직접 호출 금지
 - setActive(false) + setVisible(false) 로 비활성화 → BattleScene Pool이 회수
 - Task 4 unit-agent에서 BattleScene Pool 회수 로직 구현 예정
+
+## PWA 및 아이콘 설정 완료 (2026-02-25)
+- **deploy-agent / sprite-agent 혼합 작업 완료** (실제 배포 전 로컬 세팅)
+- **아이콘**: Google AI (Imagen 4)를 이용해 3D 기사 얼굴(클래시 로얄 스타일) 아이콘(`app_icon.jpeg`) 생성 후, `sharp`를 통해 PWA용 PNG(`icon-192x192.png`, `icon-512x512.png`, `apple-touch-icon.png`)로 변환 완료.
+- **다국어 매니페스트**: 기기 언어 설정에 따라 `manifest.json` 혹은 `manifest_en.json`을 사용하려 했으나, PWA 안정적인 설치 트리거를 위해 기본 `manifest.json`으로 롤백하여 한국어 고정 유지. 대신 브라우저 탭 타이틀은 자바스크립트로 다국어 처리.
+- **가로 회전 방지 (Portrait Lock)**:
+  1. `manifest.json` 내에 `"orientation": "portrait"` 추가 (홈 화면 추가 시 강제)
+  2. `index.html` 내에 `screen.orientation.lock('portrait')` JS 락 시도 추가
+  3. `index.css` 및 `index.html` 내에 폰을 가로로 뉘일 시 `#landscape-warning` 오버레이 뷰를 띄워 강제로 시야 차단하는 최후통첩 로직 구현.
