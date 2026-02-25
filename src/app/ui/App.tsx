@@ -24,9 +24,9 @@ export default function App() {
           {/* 중앙 남는 공간: 게임 화면이 보이는 투명한 영역 */}
           <div className="flex-1 w-full min-h-0" />
 
-          {/* 하단 UI (덱 편성, 조작) - floating overlay */}
-          <div className="h-[244px] shrink-0 bg-gray-900/80 backdrop-blur-sm flex items-center justify-center border-t border-gray-700/50 pointer-events-auto">
-            <span className="text-gray-300 text-sm font-medium">하단 덱/스킬 조작부 오버레이</span>
+          {/* 하단 UI (덱 편성, 조작) - floating overlay: Clash Royale 비율에 맞춰 크기 축소 (180px) */}
+          <div className="h-[180px] shrink-0 bg-gray-900/80 backdrop-blur-sm flex items-center justify-center border-t border-gray-700/50 pointer-events-auto">
+            <span className="text-gray-300 text-sm font-medium">하단 덱/스킬 조작부 오버레이 (180px)</span>
           </div>
 
         </div>
