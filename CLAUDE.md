@@ -87,6 +87,13 @@ src/
 - asset 경로는 `import.meta.env.BASE_URL` 기반 사용. 절대 경로(`/assets/`) 금지.
 - `vercel.json` SPA fallback rewrite 필수.
 
+### AI 에셋 자동 생성 (Image Generation)
+Claude, Cursor, Gemini 등 모든 AI 에이전트는 플레이스홀더를 사용하지 말고 아래 스크립트로 직접 스프라이트를 생성해 적용한다.
+```bash
+node scripts/generate_sprite.mjs "프롬프트 내용" "저장할파일명.jpeg"
+```
+* **주의**: 루트 디렉토리의 `.env` 파일에 `GEMINI_API_KEY` 설정 확인. 프롬프트는 영어로 상세하게 작성 (`docs/asset_generation_guide.md` 참조).
+
 ---
 
 ## 개발 워크플로 규칙 (필수)

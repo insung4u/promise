@@ -152,6 +152,14 @@ npm run lint     # eslint .
 - asset 경로는 `import.meta.env.BASE_URL` 기반 사용. 절대 경로(`/assets/`) 금지.
 - `vercel.json` SPA fallback rewrite 필수.
 
+### AI 에셋 생성 (Image Generation)
+Agent(AI) 혹은 사용자는 아래 내장된 스크립트를 통해 언제든 고품질 게임 에셋 생성이 가능하다:
+```bash
+node scripts/generate_sprite.mjs "프롬프트 내용" "파일명.jpeg"
+```
+* **주의**: 실행 전 프로젝트 루트의 `.env` 파일에 `GEMINI_API_KEY`가 있는지 확인.
+* **사용처**: 플레이스홀더를 대체할 완벽한 에셋이 필요할 때 직접/AI가 프롬프트를 작성하여 터미널에서 즉시 실행하고 적용.
+
 ---
 
 ## 8. MVP Task 순서
