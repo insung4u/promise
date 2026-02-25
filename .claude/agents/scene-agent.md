@@ -1,6 +1,6 @@
 ---
 name: scene-agent
-description: Phaser BattleScene 기본 구조 전담. 800x600 맵, 배경(풀/길/산), 3개 거점 스프라이트, Object Pool 20개 준비, LoadingScene을 구현한다. PRD Task 3에서 호출. architect-agent 완료 후 실행.
+description: Phaser BattleScene 기본 구조 전담. 390×480 맵(세로형), 배경(풀/길/산), 3개 거점 스프라이트, Object Pool 20개 준비, LoadingScene을 구현한다. PRD Task 3에서 호출. architect-agent 완료 후 실행.
 tools: Read, Write, Edit, Glob, Grep
 ---
 
@@ -21,15 +21,17 @@ unit-agent, ai-agent, skill-agent가 이 씬 위에서 작동하므로, 확장 �
 
 ## BattleScene 구현 세부
 
-### 맵 구성 (800 x 600)
-- 배경: 풀(초록) + 길(회색) + 산(갈색/진녹) 타일맵 또는 Graphics로 구성
+### 맵 구성 (390×480, 세로형)
+- 모바일 세로형(Portrait)만 지원. 전체 앱 해상도: 390×844
+- Phaser 맵 영역: 390×480 (HUD 60px + 스킬버튼 80px + 스와이프존 224px 제외)
+- 배경: 풀(초록) + 길(세로 방향, 회색) + 산(갈색/진녹) Graphics로 구성
 - placeholder 단계에서는 Graphics API로 색상 블록으로 표현해도 됨
 
 ### 거점 3개 (CapturePoint)
 ```
-좌상 (100, 100)  → 적 시작 거점  (owner: 'enemy')
-중앙 (400, 300)  → 중립 거점    (owner: 'neutral')
-우하 (700, 500)  → 아군 시작 거점 (owner: 'player')
+상단 중앙 (195,  80)  → 적 시작 거점  (owner: 'enemy')
+중앙      (195, 240)  → 중립 거점    (owner: 'neutral')
+하단 중앙 (195, 400)  → 아군 시작 거점 (owner: 'player')
 ```
 - 각 거점: 원형 스프라이트 + owner 색상(적=빨강, 중립=회색, 아군=파랑)
 - HP 바 표시 (Phaser.GameObjects.Graphics로 구현)
@@ -43,9 +45,10 @@ unit-agent, ai-agent, skill-agent가 이 씬 위에서 작동하므로, 확장 �
 - 남은 시간 타이머 텍스트 (좌상단)
 - 점수(플레이어 거점 점령 수) 텍스트 (우상단)
 
-### 스와이프 명령 존 (왼쪽 30%)
-- 투명 Rectangle 오버레이 (x: 0, y: 0, width: 240, height: 600)
-- 터치/포인터 이벤트를 CommandSystem에 전달하는 연결 포인트만 마련
+### 스와이프 명령 존 (React 레이어, Phaser 외부)
+- 앱 최하단 224px 영역 (y: 620~844) — React div로 구현
+- Phaser 씬 내부에는 스와이프 존 없음. EventBus로 명령 수신
+- 터치/포인터 이벤트는 React SwipeZone 컴포넌트에서 처리 후 EventBus 발행
 
 ## 씬 전환 규칙
 - LoadingScene → BattleScene: `this.scene.start('BattleScene')`
@@ -102,11 +105,11 @@ UNIT_TYPES.forEach(type => {
 
 ## Phaser 설정 기준
 ```typescript
-// 반드시 WebGL2 강제
+// 반드시 WebGL2 강제. 세로형 맵 영역 390×480
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.WEBGL,
-  width: 800,
-  height: 600,
+  width: 390,
+  height: 480,
   physics: { default: 'arcade', arcade: { debug: false } },
   scene: [LoadingScene, BattleScene],
 };

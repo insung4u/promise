@@ -4,13 +4,16 @@ import type { SwipeDirection } from '@/types';
 // Task 5(ai-agent)에서 실제 스와이프 처리 로직이 구현된다.
 
 // 방향별 거점 이동 목표 좌표
-// PRD 거점 좌표 기준: 좌상(100,100), 중앙(400,300), 우하(700,500)
+// 세로형 맵(390×480) 기준 거점 좌표:
+//   적 거점: (195, 80)  — 맵 상단 중앙
+//   중립 거점: (195, 240) — 맵 중앙
+//   아군 거점: (195, 400) — 맵 하단 중앙
 const DIRECTION_TARGETS: Record<SwipeDirection, { x: number; y: number }> = {
-  up:     { x: 400, y: 100 },
-  down:   { x: 650, y: 500 },
-  left:   { x: 150, y: 300 },
-  right:  { x: 650, y: 300 },
-  center: { x: 400, y: 300 },
+  up:     { x: 195, y:  80 },   // 적 거점 방향 (맵 상단 중앙)
+  down:   { x: 195, y: 400 },   // 아군 거점 방향 (맵 하단 중앙)
+  left:   { x:  80, y: 240 },   // 좌 집결
+  right:  { x: 310, y: 240 },   // 우 집결
+  center: { x: 195, y: 240 },   // 중앙 거점
 };
 
 export class CommandSystem {

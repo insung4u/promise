@@ -215,11 +215,11 @@ export class CommandSystem {
     const units = this.getPlayerUnits().filter((u) => u.isAlive);
 
     const targets: Record<string, { x: number; y: number }> = {
-      up:     { x: 400, y: 100 },   // 적 진영 방향
-      down:   { x: 650, y: 500 },   // 아군 거점 방향
-      left:   { x: 150, y: 300 },   // 좌 집결
-      right:  { x: 650, y: 300 },   // 우 집결
-      center: { x: 400, y: 300 },   // 중앙 거점
+      up:     { x: 195, y:  80 },   // 적 거점 방향 (맵 상단 중앙)
+      down:   { x: 195, y: 400 },   // 아군 거점 방향 (맵 하단 중앙)
+      left:   { x:  80, y: 240 },   // 좌 집결
+      right:  { x: 310, y: 240 },   // 우 집결
+      center: { x: 195, y: 240 },   // 중앙 거점
     };
 
     const target = targets[direction];
@@ -245,7 +245,7 @@ export class CommandSystem {
 
 ```typescript
 // src/app/ui/components/SwipeZone.tsx
-// 왼쪽 30% 영역에 배치
+// 하단 스와이프 명령 존 (전체 너비, ~224px 높이)에 배치
 // Hammer.js 또는 Phaser 내장 터치 이벤트로 스와이프 감지
 // EventBus.emit('battle:swipe', { direction }) 호출
 
@@ -292,7 +292,7 @@ export default function SwipeZone() {
   return (
     <div
       ref={ref}
-      className="absolute left-0 top-0 w-[30%] h-full bg-black/20 flex items-center justify-center"
+      className="absolute bottom-0 left-0 w-full h-[224px] bg-black/20 flex items-center justify-center"
     >
       <span className="text-white/40 text-sm rotate-90">SWIPE</span>
     </div>
