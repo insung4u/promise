@@ -9,6 +9,7 @@
 | 파일 | 설명 |
 |---|---|
 | [`prd.md`](./prd.md) | **Product Requirements Document** — 프로젝트 목표, Tech Stack, 폴더 구조, 데이터 모델, 전투 모드, 배포 규칙, Phase 1+ 로드맵 |
+| [`design.md`](./design.md) | **디자인 스펙** — 컬러 팔레트, 맵 구성/좌표, 유닛 스프라이트 규격, 이동/공격/스킬/사망 애니메이션, UI 레이아웃 상세, 파티클 이펙트, 에셋 파일 구조 |
 | [`game-systems-reference.md`](./game-systems-reference.md) | **게임 시스템 레퍼런스** — 클래시 오브 킹즈 참고 자료. 유닛 스탯 수치(공/방/체/사거리/속도/적재/식량소모), 건물 체계, 자원 종류, 계급 버프, 기술 연구 트리 |
 
 ---
