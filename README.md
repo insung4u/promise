@@ -72,11 +72,16 @@ src/
 └── types/          # 전체 TypeScript 인터페이스 정의
 ```
 
+## 테스트 링크 (Live Demo)
+
+🔗 **[https://promise-sooty.vercel.app/](https://promise-sooty.vercel.app/)**
+> Vercel을 통해 메인 브랜치의 변경사항이 자동 배포되어 실시간으로 반영됩니다.
+
 ---
 
 ## 개발 현황 (Phase 0)
 
-- [ ] Task 1 — 프로젝트 아키텍처 구축
+- [x] Task 1 — 프로젝트 아키텍처 구축
 - [ ] Task 2 — 로비 화면 (덱 편성)
 - [ ] Task 3 — Phaser BattleScene 기본
 - [ ] Task 4 — 4종 유닛 구현
