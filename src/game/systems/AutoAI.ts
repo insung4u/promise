@@ -64,6 +64,9 @@ export class AutoAI {
   ): void {
     if (!this.enabled) return;
 
+    // 루프 밖에서 한 번만 필터 — update() 내 반복 array 생성 방지
+    const aliveEnemies = enemies.filter((e) => e.isAlive);
+
     for (const unit of units) {
       if (!unit.isAlive) continue;
 
@@ -71,7 +74,7 @@ export class AutoAI {
       this.tickCooldown(unit.unitData.id, delta);
 
       // 행동 결정
-      this.decide(unit, enemies, capturePoints);
+      this.decide(unit, aliveEnemies, capturePoints);
     }
   }
 
@@ -105,9 +108,9 @@ export class AutoAI {
   /**
    * 유닛 한 개의 프레임별 행동 결정
    * 우선순위: 사정거리 공격 → 거점 이동 → 적 추적
+   * aliveEnemies는 update()에서 미리 필터링해서 전달받는다.
    */
-  private decide(unit: Unit, enemies: Unit[], cps: CapturePoint[]): void {
-    const aliveEnemies = enemies.filter((e) => e.isAlive);
+  private decide(unit: Unit, aliveEnemies: Unit[], cps: CapturePoint[]): void {
 
     // ─ 1순위: 사정거리 내 적 공격 ─────────────────────────────────────
     const inRange = this.findClosest(unit, aliveEnemies, unit.attackRangePx);

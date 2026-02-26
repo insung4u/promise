@@ -5,12 +5,13 @@ import { Unit } from '../entities/Unit';
 import { UnitFactory } from '../entities/UnitFactory';
 import { AutoAI } from '../systems/AutoAI';
 import { CommandSystem } from '../systems/CommandSystem';
+import { SkillSystem } from '../systems/SkillSystem';
 import type { CapturePoint, UnitData, UnitType } from '@/types';
 
 /**
  * 전투 씬 메인
  * 390×480 전투 맵, 배경 지형, 거점 3개, Object Pool 초기화를 담당한다.
- * Task 4: 유닛 스폰 / Task 5: AutoAI + CommandSystem / Task 6: SkillSystem
+ * Task 4: 유닛 스폰 / Task 5: AutoAI + CommandSystem / Task 6: SkillSystem + 승패 판정
  */
 export class BattleScene extends Phaser.Scene {
   /** 거점 데이터 배열 */
@@ -28,14 +29,23 @@ export class BattleScene extends Phaser.Scene {
   /** 스와이프 명령 시스템 */
   private commandSystem!: CommandSystem;
 
+  /** 스킬 시스템 */
+  private skillSystem!: SkillSystem;
+
   /** 남은 시간 (초) — init 데이터로 오버라이드 가능 */
   private timeLeft = 600;
+
+  /** 최대 전투 시간 (초) — timeElapsed 계산에 사용 */
+  private maxTime = 600;
 
   /** 전투 모드 */
   private mode: 'attack' | 'defense' = 'attack';
 
   /** HUD 업데이트 throttle (1000ms 간격) */
   private hudTimer = 0;
+
+  /** 전투 종료 처리 여부 — 중복 호출 방지 */
+  private battleEnded = false;
 
   // ─── 유닛 배열 (Unit 인스턴스) ──────────────────────────────────────
   /** 아군 유닛 배열 */
@@ -65,11 +75,13 @@ export class BattleScene extends Phaser.Scene {
    * 씬 초기화 — 전투 모드와 제한 시간을 외부에서 주입받는다.
    */
   init(data: { mode?: 'attack' | 'defense'; timeLimit?: number }): void {
-    this.mode = data.mode ?? 'attack';
-    this.timeLeft = data.timeLimit ?? 600;
-    this.hudTimer = 0;
-    this.playerUnits = [];
-    this.enemyUnits = [];
+    this.mode         = data.mode ?? 'attack';
+    this.timeLeft     = data.timeLimit ?? 600;
+    this.maxTime      = this.timeLeft;
+    this.hudTimer     = 0;
+    this.battleEnded  = false;
+    this.playerUnits  = [];
+    this.enemyUnits   = [];
     this.cpGraphics.clear();
     this.cpRings.clear();
   }
@@ -86,6 +98,13 @@ export class BattleScene extends Phaser.Scene {
 
     // CommandSystem 초기화 — 플레이어 유닛 배열 접근자 주입
     this.commandSystem = new CommandSystem(() => this.playerUnits);
+
+    // SkillSystem 초기화 — 플레이어/적군 유닛 배열 접근자 주입
+    this.skillSystem = new SkillSystem(
+      this,
+      () => this.playerUnits,
+      () => this.enemyUnits,
+    );
 
     this.setupEventListeners();
 
@@ -292,6 +311,9 @@ export class BattleScene extends Phaser.Scene {
   // ─────────────────────────────────────────────────────────────────────
 
   update(_time: number, delta: number): void {
+    // 전투 종료 후에는 업데이트 중단
+    if (this.battleEnded) return;
+
     // ─ 타이머 감소 ──────────────────────────────────────────────────────
     this.timeLeft -= delta / 1000;
 
@@ -308,6 +330,13 @@ export class BattleScene extends Phaser.Scene {
     // ─ 거점 점령 진행 (매 프레임) ────────────────────────────────────────
     this.updateCaptureProgress(delta);
 
+    // ─ 스킬 시스템 쿨타임 업데이트 ───────────────────────────────────────
+    this.skillSystem.update(delta);
+
+    // ─ 승패 즉시 판정 (매 프레임 체크) ──────────────────────────────────
+    this.checkWinCondition();
+    if (this.battleEnded) return;  // endBattle()에서 플래그 설정 시 즉시 중단
+
     // ─ HUD 업데이트 (1초 간격 throttle) ─────────────────────────────────
     this.hudTimer += delta;
     if (this.hudTimer >= 1000) {
@@ -320,11 +349,12 @@ export class BattleScene extends Phaser.Scene {
       this.timerText.setText(`${tl}초`);
       this.scoreText.setText(`아군: ${pc} / 적: ${ec}`);
 
-      // React HUD 오버레이에 이벤트 발행 — 타입: { timeLeft, playerCount, enemyCount }
+      // React HUD 오버레이에 이벤트 발행 (스킬 쿨타임 포함)
       EventBus.emit('battle:hud', {
         timeLeft: tl,
         playerCount: pc,
         enemyCount: ec,
+        skillCooldownRatios: this.skillSystem.getCooldownRatios(),
       });
     }
 
@@ -448,7 +478,7 @@ export class BattleScene extends Phaser.Scene {
   }
 
   // ─────────────────────────────────────────────────────────────────────
-  // 점수 계산 & 결과 처리
+  // 점수 계산 & 승패 판정
   // ─────────────────────────────────────────────────────────────────────
 
   /** 아군이 점령한 거점 수 */
@@ -462,27 +492,93 @@ export class BattleScene extends Phaser.Scene {
   }
 
   /**
-   * 시간 초과 시 최종 점수로 승패를 결정하고 React에 전달한다.
+   * 즉시 승패 판정 — 매 프레임 update()에서 호출
+   *
+   * 공격 모드 승리 조건 (OR):
+   *   - 적 유닛 전멸
+   *   - 아군 거점 2개 이상 점령
+   * 공격 모드 패배 조건:
+   *   - 아군 유닛 전멸
+   *
+   * 방어 모드 패배 조건:
+   *   - 아군 거점 0개 (모두 빼앗김)
+   *   - 아군 유닛 전멸
+   * 방어 모드 승리: 시간 초과까지 버티면 handleTimeUp()에서 처리
    */
-  private handleTimeUp(): void {
-    const playerScore = this.countPlayerPoints();
-    const enemyScore  = this.countEnemyPoints();
-    const result: 'win' | 'lose' = playerScore > enemyScore ? 'win' : 'lose';
+  private checkWinCondition(): void {
+    const playerAlive = this.playerUnits.length;
+    const enemyAlive  = this.enemyUnits.length;
+    const playerCPs   = this.countPlayerPoints();
+
+    if (this.mode === 'attack') {
+      // 승리 조건 (OR)
+      if (enemyAlive === 0 || playerCPs >= 2) {
+        this.endBattle('win');
+        return;
+      }
+      // 패배 조건
+      if (playerAlive === 0) {
+        this.endBattle('lose');
+      }
+    } else {
+      // 방어 모드 패배 조건
+      if (playerCPs === 0 || playerAlive === 0) {
+        this.endBattle('lose');
+      }
+      // 방어 모드 승리는 handleTimeUp()에서 처리
+    }
+  }
+
+  /**
+   * 전투 종료 처리 — 승/패 결과를 React에 전달하고 씬을 중단한다.
+   * battleEnded 플래그로 중복 호출을 방지한다.
+   */
+  private endBattle(result: 'win' | 'lose'): void {
+    if (this.battleEnded) return;
+    this.battleEnded = true;
+
+    const survivalCount = this.playerUnits.length;
+    const timeElapsed   = this.maxTime - Math.max(0, this.timeLeft);
+    const resourceReward = result === 'win' ? 200 + survivalCount * 20 : 50;
+    const fameReward     = result === 'win' ? 100 + survivalCount * 10 : 10;
 
     EventBus.emit('battle:result', {
       result,
       mode: this.mode,
-      survivalCount: this.playerUnits.filter((u) => u.isAlive).length,
-      timeElapsed: this.mode === 'attack' ? 600 - this.timeLeft : this.timeLeft,
-      resourceReward: result === 'win' ? 200 : 50,
-      fameReward:     result === 'win' ? 100 : 10,
+      survivalCount,
+      timeElapsed,
+      resourceReward,
+      fameReward,
     });
 
-    // CommandSystem EventBus 리스너 해제
+    // 시스템 정리
     this.commandSystem.destroy();
+    this.skillSystem.destroy();
 
-    // 씬 루프 중단 (결과 화면 전환은 React가 담당)
+    // 씬 루프 중단 (화면 전환은 React가 담당)
     this.scene.pause();
+  }
+
+  /**
+   * 시간 초과 처리
+   * 공격 모드: 거점 수 비교로 승패 결정
+   * 방어 모드: 거점을 1개라도 유지했으면 승리
+   */
+  private handleTimeUp(): void {
+    if (this.battleEnded) return;
+
+    const playerCPs = this.countPlayerPoints();
+    const enemyCPs  = this.countEnemyPoints();
+
+    let result: 'win' | 'lose';
+    if (this.mode === 'attack') {
+      result = playerCPs > enemyCPs ? 'win' : 'lose';
+    } else {
+      // 방어 모드: 거점을 하나라도 지키면 승리
+      result = playerCPs >= 1 ? 'win' : 'lose';
+    }
+
+    this.endBattle(result);
   }
 
   // ─────────────────────────────────────────────────────────────────────

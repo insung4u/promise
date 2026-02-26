@@ -61,7 +61,13 @@ export interface GameEvents {
   'battle:autoToggle': { auto: boolean };
   // Phaser → React
   'battle:result':     BattleResult;
-  'battle:hud':        { timeLeft: number; playerCount: number; enemyCount: number };
+  'battle:hud':        {
+    timeLeft: number;
+    playerCount: number;
+    enemyCount: number;
+    /** 스킬별 쿨타임 비율 (0.0 = 사용 가능, 1.0 = 방금 사용) — 인덱스 0~3 */
+    skillCooldownRatios: [number, number, number, number];
+  };
   'scene:ready':       { sceneName: string };
 }
 

@@ -52,6 +52,10 @@ export class Unit extends Phaser.Physics.Arcade.Sprite {
   /** 사망 여부 */
   private _dead = false;
 
+  /** HP 바 마지막 동기화 좌표 (변경 시에만 재드로우용) */
+  private _lastHpBarX = -9999;
+  private _lastHpBarY = -9999;
+
   /**
    * @param scene    - 소속 Phaser.Scene
    * @param x        - 초기 x 좌표
@@ -316,16 +320,20 @@ export class Unit extends Phaser.Physics.Arcade.Sprite {
 
   /**
    * HP 바를 유닛 현재 위치에 동기화한다.
-   * preUpdate에서 이동 중일 때 매 프레임 호출된다.
+   * 위치가 실제로 바뀐 경우에만 재드로우한다 (성능 규칙 준수).
    */
   private syncHpBarPosition(): void {
+    // 위치 변화 없으면 재드로우 생략
+    if (this.x === this._lastHpBarX && this.y === this._lastHpBarY) return;
+    this._lastHpBarX = this.x;
+    this._lastHpBarY = this.y;
+
     const OY = -20;
     const W  = 28;
     const H  = 4;
 
     this.hpBarBg.setPosition(this.x, this.y + OY);
 
-    // hp bar의 좌상단 기준 위치만 이동 (clear 없이)
     this.hpBar.clear();
     const ratio = this.unitData.hp / this.unitData.maxHp;
     const color = ratio > 0.5 ? 0x44ff44
@@ -357,38 +365,38 @@ export class Unit extends Phaser.Physics.Arcade.Sprite {
    * 이동 각도(도)에 따른 스프라이트 키와 flipX 반환
    * 8방향 중 5방향 파일(E/NE/N/SE/S) + 3방향 flipX로 처리.
    *
-   * 각도 기준 (Phaser Angle.Between 반환값: -180~180):
-   *   E    :  -22.5 ~ +22.5
-   *   NE   :  +22.5 ~ +67.5  (위쪽이 음수인 Phaser 좌표계 주의)
-   *   N    :  +67.5 ~ +112.5
-   *   NW   : +112.5 ~ +157.5  → NE + flipX
-   *   W    : ±157.5 ~ ±180   → E  + flipX
-   *   SW   :  -157.5 ~ -112.5 → SE + flipX
-   *   S    :  -112.5 ~ -67.5
-   *   SE   :  -67.5 ~ -22.5
+   * Phaser 좌표계: Y축 아래 방향이 양수.
+   * Angle.Between(x1,y1, x2,y2) = atan2(dy, dx), dy = y2-y1
+   *   - 위쪽 이동(y 감소): dy < 0 → 음수 각도
+   *   - 아래쪽 이동(y 증가): dy > 0 → 양수 각도
    *
-   * Phaser 좌표계는 Y축 아래 방향이 양수이므로,
-   * Angle.Between(x1,y1, x2,y2) 에서 위쪽(y 감소)이 음수 각도이다.
-   * 따라서 화면상 '북(위)'은 각도 -90도 근방.
-   * 아래 분기는 화면 기준으로 작성됨.
+   * 각도 기준 (스크린 방향 기준):
+   *   E  :  -22.5 ~ +22.5     (오른쪽)
+   *   NE :  -22.5 ~ -67.5     (위오른쪽, dy<0 → 음수)
+   *   N  :  -67.5 ~ -112.5    (위, dy<0 → 음수 ~-90°)
+   *   NW : -112.5 ~ -157.5    → NE + flipX
+   *   W  : ±157.5 ~ ±180      → E  + flipX
+   *   SE :  +22.5 ~ +67.5     (아래오른쪽, dy>0 → 양수)
+   *   S  :  +67.5 ~ +112.5    (아래, dy>0 → 양수 ~+90°)
+   *   SW : +112.5 ~ +157.5    → SE + flipX
    */
   private getDirSprite(deg: number): { key: string; flipX: boolean } {
     const t = this.unitData.type;
 
     // 동 (E)
-    if (deg > -22.5 && deg <= 22.5)   return { key: `${t}_E`,  flipX: false };
-    // 남동 (SE) — 화면 기준 아래오른쪽
-    if (deg > -67.5 && deg <= -22.5)  return { key: `${t}_SE`, flipX: false };
-    // 남 (S) — 화면 기준 아래
-    if (deg > -112.5 && deg <= -67.5) return { key: `${t}_S`,  flipX: false };
-    // 남서 (SW) — SE + flipX
-    if (deg > -157.5 && deg <= -112.5) return { key: `${t}_SE`, flipX: true };
-    // 북동 (NE) — 화면 기준 위오른쪽
-    if (deg > 22.5 && deg <= 67.5)    return { key: `${t}_NE`, flipX: false };
-    // 북 (N) — 화면 기준 위
-    if (deg > 67.5 && deg <= 112.5)   return { key: `${t}_N`,  flipX: false };
+    if (deg > -22.5 && deg <= 22.5)    return { key: `${t}_E`,  flipX: false };
+    // 북동 (NE) — 위오른쪽 (음수 각도)
+    if (deg > -67.5 && deg <= -22.5)   return { key: `${t}_NE`, flipX: false };
+    // 북 (N) — 위 (음수 ~-90°)
+    if (deg > -112.5 && deg <= -67.5)  return { key: `${t}_N`,  flipX: false };
     // 북서 (NW) — NE + flipX
-    if (deg > 112.5 && deg <= 157.5)  return { key: `${t}_NE`, flipX: true };
+    if (deg > -157.5 && deg <= -112.5) return { key: `${t}_NE`, flipX: true };
+    // 남동 (SE) — 아래오른쪽 (양수 각도)
+    if (deg > 22.5 && deg <= 67.5)     return { key: `${t}_SE`, flipX: false };
+    // 남 (S) — 아래 (양수 ~+90°)
+    if (deg > 67.5 && deg <= 112.5)    return { key: `${t}_S`,  flipX: false };
+    // 남서 (SW) — SE + flipX
+    if (deg > 112.5 && deg <= 157.5)   return { key: `${t}_SE`, flipX: true };
     // 서 (W) — E + flipX
     return { key: `${t}_E`, flipX: true };
   }

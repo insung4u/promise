@@ -53,7 +53,7 @@
 - Task 3: 완료 (2026-02-26) — scene-agent 역할 PM이 직접 수행
 - Task 4: 완료 (2026-02-26) — Unit/UnitFactory/Projectile/BattleScene 스폰 로직 구현
 - Task 5: 완료 (2026-02-26) — AutoAI, CommandSystem, SwipeZone, App.tsx BattleHUD/BattleControls 구현
-- Task 6: 미착수 (skill-agent 필요) — Task 5 완료, 즉시 착수 가능
+- Task 6: 완료 (2026-02-26) — SkillSystem 4종 스킬 + 승패 판정 + 스킬 버튼 쿨타임 UI
 - Task 7: 부분 완료 — 아이콘(sharp), 매니페스트, 서비스워커, portrait lock, landscape warning 완료
 - 문서 정합성 검토 완료 (2026-02-25)
 - 안티그래비티 작업: AGENTS.md, GEMINI.md 추가, App.tsx 풀스크린 리팩토링, Game.ts RESIZE 모드 변경 (2026-02-26)
@@ -78,7 +78,7 @@ src/game/entities/: Unit.ts, UnitFactory.ts, Projectile.ts
 src/game/systems/: AutoAI.ts, CommandSystem.ts, SkillSystem.ts
 
 ## 다음 단계
-Task 6 (skill-agent): SkillSystem + 승패 판정 — 즉시 착수 가능 (Task 5 완료)
+Task 7 (deploy-agent): PWA 최적화 + Vercel 배포 설정 최종 점검 — Task 1~6 완료, 즉시 착수 가능
 
 ## 수정된 파일 목록
 - docs/task-4.md
@@ -92,6 +92,17 @@ Task 6 (skill-agent): SkillSystem + 승패 판정 — 즉시 착수 가능 (Task
 - src/game/core/Game.ts (width: 390, height: 480)
 - src/game/systems/CommandSystem.ts (DIRECTION_TARGETS 세로형 좌표)
 - .claude/agents/scene-agent.md (맵 크기, 거점 좌표, 스와이프 존 위치)
+
+### Task 6 주요 결정사항 (2026-02-26)
+- `battle:hud` 페이로드에 `skillCooldownRatios: [number,number,number,number]` 추가
+- App.tsx 리팩토링: BattleHUD + BattleControls → `BattleView`(부모)로 상태 통합
+  - BattleView가 'battle:hud' 단일 구독 후 props로 전달 (중복 구독 제거)
+- SkillSystem: 스킬-유닛 타입 매핑(infantry→charge, tank→barrage, air→airstrike, special→heal)
+- SkillSystem: `skillIndex` 기반(덱 인덱스 0~3)으로 발동 유닛 결정
+- BattleScene: `battleEnded` 플래그로 endBattle() 중복 호출 방지
+- BattleScene: `maxTime` 멤버 추가 (timeElapsed 계산용)
+- 승패 판정 구현: checkWinCondition() 매 프레임 체크 + handleTimeUp() 시간초과 처리
+- 빌드 결과: tsc --noEmit 0건, npm run build 성공 (7.34s)
 
 ### Task 5 주요 결정사항 (2026-02-26)
 - `battle:hud` 이벤트 페이로드: `{ timeLeft, playerCount, enemyCount }` (점령 거점 수 아닌 생존 유닛 수)
