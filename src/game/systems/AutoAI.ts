@@ -29,6 +29,12 @@ export class AutoAI {
   /** 유닛별 공격 쿨타임 (ms 단위 잔여 시간) — Map 재사용 (new 방지) */
   private readonly attackCooldowns = new Map<string, number>();
 
+  /**
+   * update() 내 배열 할당 방지용 살아있는 적 유닛 캐시
+   * 매 update() 시작 시 in-place로 채워 재사용한다.
+   */
+  private readonly _aliveEnemyCache: Unit[] = [];
+
   /** 공격 간격 (ms) */
   private readonly ATTACK_INTERVAL = 1000;
 
@@ -64,8 +70,11 @@ export class AutoAI {
   ): void {
     if (!this.enabled) return;
 
-    // 루프 밖에서 한 번만 필터 — update() 내 반복 array 생성 방지
-    const aliveEnemies = enemies.filter((e) => e.isAlive);
+    // 캐시 배열 in-place 채우기 — update() 당 new 배열 생성 완전 제거
+    this._aliveEnemyCache.length = 0;
+    for (const e of enemies) {
+      if (e.isAlive) this._aliveEnemyCache.push(e);
+    }
 
     for (const unit of units) {
       if (!unit.isAlive) continue;
@@ -74,7 +83,7 @@ export class AutoAI {
       this.tickCooldown(unit.unitData.id, delta);
 
       // 행동 결정
-      this.decide(unit, aliveEnemies, capturePoints);
+      this.decide(unit, this._aliveEnemyCache, capturePoints);
     }
   }
 

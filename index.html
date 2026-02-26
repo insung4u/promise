@@ -48,13 +48,8 @@
       }
     })();
 
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js').catch(err => {
-          console.log('SW registration failed: ', err);
-        });
-      });
-    }
+    // 서비스워커 등록은 vite-plugin-pwa(Workbox)가 빌드 시 자동 주입한다.
+    // 수동 등록 코드 제거 — 중복 등록 방지.
   </script>
 </body>
 

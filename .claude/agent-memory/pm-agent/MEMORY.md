@@ -54,7 +54,8 @@
 - Task 4: 완료 (2026-02-26) — Unit/UnitFactory/Projectile/BattleScene 스폰 로직 구현
 - Task 5: 완료 (2026-02-26) — AutoAI, CommandSystem, SwipeZone, App.tsx BattleHUD/BattleControls 구현
 - Task 6: 완료 (2026-02-26) — SkillSystem 4종 스킬 + 승패 판정 + 스킬 버튼 쿨타임 UI
-- Task 7: 부분 완료 — 아이콘(sharp), 매니페스트, 서비스워커, portrait lock, landscape warning 완료
+- Task 7: 완료 (2026-02-26) — vite-plugin-pwa(Workbox), vercel.json 캐시 헤더, vendor 청크, .env 3종, canvas touch-action, AutoAI _aliveEnemyCache 최적화
+- Phase 0 MVP 전체 완료
 - 문서 정합성 검토 완료 (2026-02-25)
 - 안티그래비티 작업: AGENTS.md, GEMINI.md 추가, App.tsx 풀스크린 리팩토링, Game.ts RESIZE 모드 변경 (2026-02-26)
 
@@ -77,8 +78,24 @@ src/game/scenes/: LoadingScene.ts, BattleScene.ts
 src/game/entities/: Unit.ts, UnitFactory.ts, Projectile.ts
 src/game/systems/: AutoAI.ts, CommandSystem.ts, SkillSystem.ts
 
+## 버그 수정 이력
+
+### 즉시 승리 버그 (2026-02-26)
+- **증상**: 전투 시작 시 즉시 "승리!" 화면 (경과 00:00, 생존 0개)
+- **원인**: `BattleScene.update()` 루프가 `create()` 직후부터 실행되어,
+  `battle:start` 이벤트(유닛 스폰)를 받기 전에 `checkWinCondition()`이 호출됨.
+  이때 `enemyUnits`가 빈 배열 → `enemyAlive === 0` → 즉시 `endBattle('win')`
+- **해결**: `battleStarted` 플래그 추가. `battle:start` 이벤트에서 유닛 스폰 완료 후
+  `true`로 설정. `checkWinCondition()` / `handleTimeUp()` 모두 이 플래그 체크 후 실행.
+- **수정 파일**: `src/game/scenes/BattleScene.ts`
+- **교훈**: Phaser `update()` 루프는 `create()` 완료 직후부터 실행된다.
+  게임 로직은 실제 시작 플래그 없이 배열 길이만으로 상태를 판단하면 안 된다.
+
 ## 다음 단계
-Task 7 (deploy-agent): PWA 최적화 + Vercel 배포 설정 최종 점검 — Task 1~6 완료, 즉시 착수 가능
+Phase 0 MVP 완료. 다음 선택지:
+- Vercel 실배포: GitHub main 브랜치 push → Vercel 자동 배포
+- 실기기 테스트: npm run preview → 로컬 QA
+- Phase 1 착수: 영토 지도 시스템 / 서버(Colyseus) 연동 설계
 
 ## 수정된 파일 목록
 - docs/task-4.md

@@ -48,10 +48,12 @@ body,
   -webkit-user-select: none;
 }
 
-/* Phaser 캔버스 픽셀 렌더링 최적화 */
+/* Phaser 캔버스 픽셀 렌더링 최적화 + 터치 딜레이 제거 */
 canvas {
   image-rendering: pixelated;
   image-rendering: crisp-edges;
+  /* Phaser 내장 터치 핸들러가 전담 — 브라우저 기본 터치 동작 완전 차단 */
+  touch-action: none;
 }
 
 /* ─── 가로 회전 방지 (오버레이 표시) ────────────────────────────────── */

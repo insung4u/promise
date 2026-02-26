@@ -47,6 +47,10 @@ export class BattleScene extends Phaser.Scene {
   /** 전투 종료 처리 여부 — 중복 호출 방지 */
   private battleEnded = false;
 
+  /** 전투 실제 시작 여부 — battle:start 이벤트 수신 + 유닛 스폰 완료 후 true
+   * false 상태에서는 승패 판정을 실행하지 않는다. */
+  private battleStarted = false;
+
   // ─── 유닛 배열 (Unit 인스턴스) ──────────────────────────────────────
   /** 아군 유닛 배열 */
   playerUnits: Unit[] = [];
@@ -78,9 +82,10 @@ export class BattleScene extends Phaser.Scene {
     this.mode         = data.mode ?? 'attack';
     this.timeLeft     = data.timeLimit ?? 600;
     this.maxTime      = this.timeLeft;
-    this.hudTimer     = 0;
-    this.battleEnded  = false;
-    this.playerUnits  = [];
+    this.hudTimer      = 0;
+    this.battleEnded   = false;
+    this.battleStarted = false;
+    this.playerUnits   = [];
     this.enemyUnits   = [];
     this.cpGraphics.clear();
     this.cpRings.clear();
@@ -260,6 +265,9 @@ export class BattleScene extends Phaser.Scene {
 
       // 적 유닛 스폰 (고정 5종, T2 기준)
       this.spawnEnemyUnits();
+
+      // 유닛 스폰 완료 후 승패 판정 활성화
+      this.battleStarted = true;
     });
   }
 
@@ -506,6 +514,9 @@ export class BattleScene extends Phaser.Scene {
    * 방어 모드 승리: 시간 초과까지 버티면 handleTimeUp()에서 처리
    */
   private checkWinCondition(): void {
+    // 전투가 실제로 시작(유닛 스폰 완료)되기 전에는 판정하지 않는다
+    if (!this.battleStarted) return;
+
     const playerAlive = this.playerUnits.length;
     const enemyAlive  = this.enemyUnits.length;
     const playerCPs   = this.countPlayerPoints();
@@ -565,7 +576,7 @@ export class BattleScene extends Phaser.Scene {
    * 방어 모드: 거점을 1개라도 유지했으면 승리
    */
   private handleTimeUp(): void {
-    if (this.battleEnded) return;
+    if (!this.battleStarted || this.battleEnded) return;
 
     const playerCPs = this.countPlayerPoints();
     const enemyCPs  = this.countEnemyPoints();
