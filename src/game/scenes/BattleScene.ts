@@ -251,8 +251,21 @@ export class BattleScene extends Phaser.Scene {
   private setupEventListeners(): void {
     // 전투 시작 이벤트 (로비에서 덱 편성 완료 후 전송)
     EventBus.on('battle:start', (payload: { deck: UnitData[]; mode: 'attack' | 'defense'; timeLimit: number }) => {
-      this.mode      = payload.mode;
-      this.timeLeft  = payload.timeLimit;
+      this.mode         = payload.mode;
+      this.timeLeft     = payload.timeLimit;
+      this.maxTime      = payload.timeLimit;
+      this.hudTimer     = 0;
+
+      // 두 번째 이후 전투: 종료 플래그 리셋 + 씬 재개
+      this.battleEnded   = false;
+      this.battleStarted = false;
+
+      // 거점 상태 초기화 (두 번째 전투에서 이전 소유자 상태 승계 방지)
+      this.capturePoints.forEach((cp, i) => {
+        cp.owner           = i === 0 ? 'enemy' : i === 2 ? 'player' : 'neutral';
+        cp.captureProgress = 0;
+        this.redrawCapturePoint(cp);
+      });
 
       // 기존 유닛 정리
       this.playerUnits.forEach((u) => { u.setActive(false); u.setVisible(false); });
@@ -265,6 +278,11 @@ export class BattleScene extends Phaser.Scene {
 
       // 적 유닛 스폰 (고정 5종, T2 기준)
       this.spawnEnemyUnits();
+
+      // 씬이 일시정지 상태면 재개
+      if (this.scene.isPaused()) {
+        this.scene.resume();
+      }
 
       // 유닛 스폰 완료 후 승패 판정 활성화
       this.battleStarted = true;

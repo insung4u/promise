@@ -13,7 +13,7 @@ interface BattleResultScreenProps {
  * 승패, 보상(자원/명성), 생존 유닛 수를 표시하고 로비로 돌아가는 버튼을 제공한다.
  */
 export default function BattleResultScreen({ result }: BattleResultScreenProps) {
-  const { endBattle } = useBattleStore();
+  const { returnToLobby } = useBattleStore();
   const { addFame, addResources } = usePlayerStore();
 
   const isWin = result.result === 'win';
@@ -22,9 +22,8 @@ export default function BattleResultScreen({ result }: BattleResultScreenProps) 
   const handleReturnToLobby = () => {
     addResources(result.resourceReward);
     addFame(result.fameReward);
-    endBattle(result);
-    // Phaser 씬 정리 이벤트 (향후 씬 재시작에 활용)
-    EventBus.emit('scene:ready', { sceneName: 'LoadingScene' });
+    // lastResult → null 로 초기화해야 로비 화면이 표시된다
+    returnToLobby();
   };
 
   // 경과 시간을 MM:SS로 변환
