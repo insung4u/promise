@@ -1,4 +1,14 @@
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
 import type { DirectionKey } from '@/types';
+
+/**
+ * shadcn/ui 스타일 병합 유틸
+ * clsx + tailwind-merge 조합으로 클래스 충돌을 방지한다.
+ */
+export function cn(...inputs: ClassValue[]): string {
+  return twMerge(clsx(inputs));
+}
 
 // 두 좌표 사이의 방향 키와 flipX 여부를 반환하는 유틸 함수
 // 8방향 스프라이트 텍스처 키 계산에 사용된다.

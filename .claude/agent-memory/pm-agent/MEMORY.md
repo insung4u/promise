@@ -9,9 +9,18 @@
 
 ### 화면 방향 및 해상도 (확정)
 - 모바일 세로형(Portrait)만 지원. 가로형 제작 안 함.
-- 전체 앱 해상도: 390×844 (iPhone 14 논리 해상도)
-- Phaser 맵 영역: 390×480 (HUD 60px + 스킬버튼 80px + 스와이프존 224px 제외)
+- 전체 앱 해상도: 390×844 기준 (iPhone 14) — 실제 컨테이너는 max-w-[430px] 유동 대응
+- Phaser 맵: 고정 크기 대신 width: '100%', height: '100%' + RESIZE 스케일 모드 (풀스크린)
 - 수정 완료: CLAUDE.md, docs/prd.md, docs/task-3.md, src/game/core/Game.ts
+
+### App.tsx 레이아웃 구조 (확정, 안티그래비티 리팩토링 반영)
+- 최상위: `fixed inset-0` 컨테이너 (모바일 Safari 주소창 대응)
+- 게임 컨테이너: `relative w-full h-full max-w-[430px] mx-auto` (iPhone 15 Pro 등 넓은 화면 대응)
+- Phaser 캔버스: `absolute inset-0 z-0` (뒤쪽 풀스크린)
+- UI 오버레이: `absolute inset-0 z-10 flex flex-col pointer-events-none`
+  - 상단 HUD: h-[120px] + pt safe-area-inset-top
+  - 하단 UI: h-[180px] + pb safe-area-inset-bottom
+- 수정 완료: src/app/ui/App.tsx
 
 ### 거점 좌표 (확정, 세로형 390×480 맵 기준)
 - 적 거점: (195, 80) — 맵 상단 중앙
@@ -40,8 +49,14 @@
 
 ## Task 진행 현황
 - Task 1: 완료 (2026-02-25) — architect-agent 역할 PM이 직접 수행
-- Task 2~7: 미착수
+- Task 2: 완료 (2026-02-26) — ui-agent 역할 PM이 직접 수행
+- Task 3: 완료 (2026-02-26) — scene-agent 역할 PM이 직접 수행
+- Task 4: 완료 (2026-02-26) — Unit/UnitFactory/Projectile/BattleScene 스폰 로직 구현
+- Task 5: 완료 (2026-02-26) — AutoAI, CommandSystem, SwipeZone, App.tsx BattleHUD/BattleControls 구현
+- Task 6: 미착수 (skill-agent 필요) — Task 5 완료, 즉시 착수 가능
+- Task 7: 부분 완료 — 아이콘(sharp), 매니페스트, 서비스워커, portrait lock, landscape warning 완료
 - 문서 정합성 검토 완료 (2026-02-25)
+- 안티그래비티 작업: AGENTS.md, GEMINI.md 추가, App.tsx 풀스크린 리팩토링, Game.ts RESIZE 모드 변경 (2026-02-26)
 
 ## Task 1 주요 결정사항
 - `@types/node` devDependency 추가 필요 (vite.config.ts의 path, __dirname, process 사용)
@@ -63,9 +78,7 @@ src/game/entities/: Unit.ts, UnitFactory.ts, Projectile.ts
 src/game/systems/: AutoAI.ts, CommandSystem.ts, SkillSystem.ts
 
 ## 다음 단계
-Task 2 (ui-agent): 로비 화면 + 덱 편성 UI
-Task 3 (scene-agent): BattleScene 맵, 거점, Object Pool
-Task 2, 3은 병렬 착수 가능 (Task 1 완료 기반)
+Task 6 (skill-agent): SkillSystem + 승패 판정 — 즉시 착수 가능 (Task 5 완료)
 
 ## 수정된 파일 목록
 - docs/task-4.md
@@ -79,6 +92,23 @@ Task 2, 3은 병렬 착수 가능 (Task 1 완료 기반)
 - src/game/core/Game.ts (width: 390, height: 480)
 - src/game/systems/CommandSystem.ts (DIRECTION_TARGETS 세로형 좌표)
 - .claude/agents/scene-agent.md (맵 크기, 거점 좌표, 스와이프 존 위치)
+
+### Task 5 주요 결정사항 (2026-02-26)
+- `battle:hud` 이벤트 페이로드: `{ timeLeft, playerCount, enemyCount }` (점령 거점 수 아닌 생존 유닛 수)
+- types/index.ts GameEvents 및 BattleScene.ts 통일 완료 (`playerScore/enemyScore` → `playerCount/enemyCount`)
+- BattleHUD: useState(600) 기본값 → EventBus 'battle:hud' 구독으로 실시간 갱신
+- BattleControls 오토 버튼: useState(true) → 클릭 시 setAutoMode + EventBus.emit('battle:autoToggle')
+- SwipeZone: `src/app/ui/components/SwipeZone.tsx` (touch passive 리스너, 20px 임계값)
+- 빌드 결과: tsc --noEmit 0건, npm run build 성공 (7.14s)
+
+### Task 2, 3 주요 결정사항 (2026-02-26)
+- tsconfig.app.json에 `"types": ["vite/client"]` 추가 필수 (import.meta.env 타입 인식)
+- LoadingScene: `this.make.graphics({ add: false })` → `this.add.graphics()` (Phaser 3.80+ 호환)
+- shadcn/ui 수동 설치: class-variance-authority, clsx, tailwind-merge, @radix-ui/react-slot, lucide-react
+- shadcn/ui 컴포넌트 위치: `src/components/ui/` (CLAUDE.md 폴더 구조 확장)
+- playerStore: 24개 유닛 (4종 × 6티어, 티어별 1.2^(tier-1) 스탯 배율)
+- App.tsx 화면 전환: 로비(Phaser 위 오버레이) / 전투(HUD 오버레이만) / 결과(모달)
+- LobbyScreen: HTML5 Drag API 전용, react-dnd 미사용
 
 ### Task 1 소스 코드 세로형 반영 + P1 수정 (2026-02-25)
 - src/game/scenes/BattleScene.ts: 임시 텍스트 좌표 (400,300) → (195,240)

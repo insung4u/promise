@@ -61,7 +61,7 @@ export interface GameEvents {
   'battle:autoToggle': { auto: boolean };
   // Phaser → React
   'battle:result':     BattleResult;
-  'battle:hud':        { timeLeft: number; playerScore: number; enemyScore: number };
+  'battle:hud':        { timeLeft: number; playerCount: number; enemyCount: number };
   'scene:ready':       { sceneName: string };
 }
 

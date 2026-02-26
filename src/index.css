@@ -2,7 +2,33 @@
 @tailwind components;
 @tailwind utilities;
 
-/* 전역 기본 스타일 — 모바일 뷰포트 완전 채우기 */
+/* ─── shadcn/ui CSS 변수 (다크 테마 기본) ─────────────────────────────── */
+@layer base {
+  :root {
+    --background: 224 71% 4%;
+    --foreground: 213 31% 91%;
+    --muted: 223 47% 11%;
+    --muted-foreground: 215 16% 57%;
+    --accent: 216 34% 17%;
+    --accent-foreground: 210 40% 98%;
+    --popover: 224 71% 4%;
+    --popover-foreground: 215 20% 65%;
+    --border: 216 34% 17%;
+    --input: 216 34% 17%;
+    --card: 224 71% 4%;
+    --card-foreground: 213 31% 91%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 222 47% 11%;
+    --secondary: 222 47% 11%;
+    --secondary-foreground: 210 40% 98%;
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+    --ring: 216 34% 17%;
+    --radius: 0.5rem;
+  }
+}
+
+/* ─── 전역 기본 스타일 — 모바일 뷰포트 완전 채우기 ──────────────────── */
 html,
 body,
 #root {
@@ -28,7 +54,7 @@ canvas {
   image-rendering: crisp-edges;
 }
 
-/* 가로 회전 방지 (오버레이 표시) */
+/* ─── 가로 회전 방지 (오버레이 표시) ────────────────────────────────── */
 #landscape-warning {
   display: none !important;
   position: fixed;
